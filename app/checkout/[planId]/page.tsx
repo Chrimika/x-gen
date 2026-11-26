@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useState, useEffect, Suspense } from "react";
+import { use, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { usePlan } from "@/lib/hooks";
@@ -14,8 +14,8 @@ import {
   formatDate,
   getCountdownLabel,
   getAvailableSeats,
+  DEFAULT_PRICING,
 } from "@/lib/pricing";
-import type { Plan } from "@/lib/types";
 
 const SURVEY_OPTIONS = [
   "Groupe WhatsApp",
@@ -23,6 +23,8 @@ const SURVEY_OPTIONS = [
   "TikTok",
   "Autre",
 ];
+
+const IS_NEW_PLAN_ID = "new-plan";
 
 export default function CheckoutPage({
   params,
@@ -33,6 +35,8 @@ export default function CheckoutPage({
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
 
+  const isNewPlan = planId === IS_NEW_PLAN_ID;
+
   const [emailToAdd, setEmailToAdd] = useState("");
   const [heardAboutUs, setHeardAboutUs] = useState("");
   const [otherSource, setOtherSource] = useState("");
@@ -41,16 +45,15 @@ export default function CheckoutPage({
 
   const isSuccess = searchParams.get("success") === "true";
   const isRenewal = searchParams.get("type") === "renewal";
-  const { plan, loading: planLoading } = usePlan(planId);
+  const { plan, loading: planLoading } = usePlan(isNewPlan ? "" : planId);
 
-  // Recompute prorated price in real-time
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const interval = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading || planLoading) {
+  if (loading || (!isNewPlan && planLoading)) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5]">
         <div className="animate-pulse text-[#666]">Chargement...</div>
@@ -77,12 +80,25 @@ export default function CheckoutPage({
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">Paiement r&eacute;ussi !</h1>
-          <p className="text-[#666] text-sm mb-6">
-            Votre paiement a &eacute;t&eacute; re&ccedil;u avec succ&egrave;s. Vous recevrez un
-            email de confirmation sous peu. Votre acc&egrave;s sera activ&eacute; dans les
-            prochaines heures.
-          </p>
+          {isNewPlan ? (
+            <>
+              <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">Paiement re&ccedil;u !</h1>
+              <p className="text-[#666] text-sm mb-6">
+                Vous &ecirc;tes maintenant en <span className="font-semibold text-[#E8622C]">liste d&apos;attente</span>.
+                D&egrave;s qu&apos;un deuxi&egrave;me membre aura &eacute;galement pay&eacute;, le plan sera cr&eacute;&eacute;
+                et votre acc&egrave;s sera activ&eacute;. Vous serez notifi&eacute; par email.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">Paiement r&eacute;ussi !</h1>
+              <p className="text-[#666] text-sm mb-6">
+                Votre paiement a &eacute;t&eacute; re&ccedil;u avec succ&egrave;s. Vous recevrez un
+                email de confirmation sous peu. Votre acc&egrave;s sera activ&eacute; dans les
+                prochaines heures.
+              </p>
+            </>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/dashboard"
@@ -137,8 +153,8 @@ export default function CheckoutPage({
     );
   }
 
-  // Plan not found
-  if (!plan) {
+  // Plan not found (only for existing plans)
+  if (!isNewPlan && !plan) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5] px-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -157,10 +173,12 @@ export default function CheckoutPage({
     );
   }
 
-  const proratedPrice = getProratedPrice(plan, undefined, now);
-  const daysRemaining = getDaysRemaining(plan, now);
-  const availableSeats = getAvailableSeats(plan);
-  const countdown = getCountdownLabel(plan, now);
+  const price = isNewPlan
+    ? DEFAULT_PRICING.fullPriceFCFA
+    : getProratedPrice(plan!, undefined, now);
+  const daysRemaining = isNewPlan ? 30 : getDaysRemaining(plan!, now);
+  const availableSeats = isNewPlan ? 99 : getAvailableSeats(plan!);
+  const countdown = isNewPlan ? "" : getCountdownLabel(plan!, now);
 
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
@@ -192,22 +210,56 @@ export default function CheckoutPage({
         return;
       }
 
-      // Save payment doc to Firestore before redirecting to NotchPay
-      await setDoc(doc(db, "payments", reference), {
-        id: reference,
-        reference,
-        memberEmail: user!.email,
-        memberUid: user!.uid,
-        planId,
-        amount: proratedPrice,
-        type: isRenewal ? "renewal" : "join",
-        status: "pending",
-        heardAboutUs: source,
-        emailToAdd: emailToAdd.trim(),
-        displayName: user!.displayName || "",
-        webhookVerified: false,
-        createdAt: new Date().toISOString(),
-      });
+      if (isNewPlan) {
+        // Save to waiting list + payment
+        await setDoc(doc(db, "payments", reference), {
+          id: reference,
+          reference,
+          memberEmail: user!.email,
+          memberUid: user!.uid,
+          planId: "new-plan",
+          amount: price,
+          type: "new_plan",
+          status: "pending",
+          heardAboutUs: source,
+          emailToAdd: emailToAdd.trim(),
+          displayName: user!.displayName || "",
+          webhookVerified: false,
+          createdAt: new Date().toISOString(),
+        });
+
+        await addDoc(collection(db, "waitingList"), {
+          email: user!.email,
+          displayName: user!.displayName || "",
+          uid: user!.uid,
+          amount: price,
+          paymentRef: reference,
+          emailToAdd: emailToAdd.trim(),
+          heardAboutUs: source,
+          status: "waiting",
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        await setDoc(doc(db, "payments", reference), {
+          id: reference,
+          reference,
+          memberEmail: user!.email,
+          memberUid: user!.uid,
+          planId,
+          amount: price,
+          type: isRenewal ? "renewal" : "join",
+          status: "pending",
+          heardAboutUs: source,
+          emailToAdd: emailToAdd.trim(),
+          displayName: user!.displayName || "",
+          webhookVerified: false,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      const description = isNewPlan
+        ? "Nouveau plan Claude AI Team - Liste d'attente"
+        : `${isRenewal ? "Renouvellement" : "Abonnement"} ${plan!.name} - Claude AI Team`;
 
       const response = await fetch("https://api.notchpay.co/payments/initialize", {
         method: "POST",
@@ -217,19 +269,19 @@ export default function CheckoutPage({
         },
         body: JSON.stringify({
           email: user!.email,
-          amount: proratedPrice,
+          amount: price,
           currency: "XAF",
-          description: `${isRenewal ? "Renouvellement" : "Abonnement"} ${plan!.name} - Claude AI Team`,
+          description,
           reference,
           callback: `${window.location.origin}/checkout/${planId}?success=true`,
           metadata: {
             planId,
-            planName: plan!.name,
+            planName: isNewPlan ? "Nouveau plan (liste d'attente)" : plan!.name,
             emailToAdd: emailToAdd.trim(),
             heardAboutUs: source,
             displayName: user!.displayName || "",
             uid: user!.uid,
-            type: isRenewal ? "renewal" : "join",
+            type: isNewPlan ? "new_plan" : isRenewal ? "renewal" : "join",
           },
         }),
       });
@@ -252,7 +304,6 @@ export default function CheckoutPage({
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
@@ -287,73 +338,96 @@ export default function CheckoutPage({
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">
-          {isRenewal ? "Renouvellement" : "Paiement"}
+          {isNewPlan ? "Nouveau plan — Liste d'attente" : isRenewal ? "Renouvellement" : "Paiement"}
         </h1>
         <p className="text-[#666] text-sm mb-8">
-          {isRenewal
-            ? "Renouvelez votre abonnement pour continuer à utiliser Claude AI."
-            : "Finalisez votre inscription pour rejoindre une équipe Claude AI."}
+          {isNewPlan
+            ? "Payez maintenant et patientez. Dès qu'un 2e membre paie, le plan est créé et vous bénéficiez de l'accès."
+            : isRenewal
+              ? "Renouvelez votre abonnement pour continuer à utiliser Claude AI."
+              : "Finalisez votre inscription pour rejoindre une équipe Claude AI."}
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Plan Summary - Right side on desktop */}
+          {/* Summary */}
           <div className="lg:col-span-2 order-first lg:order-last">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
               <h2 className="text-lg font-semibold text-[#1a1a1a] mb-4">R&eacute;capitulatif</h2>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#666]">Plan</span>
-                  <span className="text-sm font-medium text-[#1a1a1a]">{plan.name}</span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#666]">Jours restants</span>
-                  <span className="text-sm font-medium text-[#E8622C]">
-                    {daysRemaining} jours ({countdown})
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#666]">Places disponibles</span>
-                  <span className="text-sm font-medium text-[#1a1a1a]">
-                    {availableSeats} / {plan.totalSeats}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#666]">P&eacute;riode</span>
-                  <span className="text-sm text-[#1a1a1a]">
-                    {formatDate(plan.startDate)} &mdash; {formatDate(plan.endDate)}
-                  </span>
-                </div>
+                {isNewPlan ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">Type</span>
+                      <span className="text-sm font-medium text-[#E8622C]">Nouveau plan</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">Dur&eacute;e</span>
+                      <span className="text-sm font-medium text-[#1a1a1a]">1 mois complet</span>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-3">
+                      <p className="text-xs text-blue-700">
+                        Vous serez plac&eacute; en liste d&apos;attente. Le plan d&eacute;marre d&egrave;s qu&apos;au moins
+                        2 personnes ont pay&eacute;.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">Plan</span>
+                      <span className="text-sm font-medium text-[#1a1a1a]">{plan!.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">Jours restants</span>
+                      <span className="text-sm font-medium text-[#E8622C]">
+                        {daysRemaining} jours ({countdown})
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">Places disponibles</span>
+                      <span className="text-sm font-medium text-[#1a1a1a]">
+                        {availableSeats} / {plan!.totalSeats}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-[#666]">P&eacute;riode</span>
+                      <span className="text-sm text-[#1a1a1a]">
+                        {formatDate(plan!.startDate)} &mdash; {formatDate(plan!.endDate)}
+                      </span>
+                    </div>
+                  </>
+                )}
 
                 <hr className="border-gray-100" />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-medium text-[#1a1a1a]">Prix prorat&eacute;</span>
+                  <span className="text-base font-medium text-[#1a1a1a]">
+                    {isNewPlan ? "Prix" : "Prix proraté"}
+                  </span>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-[#E8622C]">
-                      {formatPrice(proratedPrice)}
+                      {formatPrice(price)}
                     </span>
                     <span className="text-sm text-[#666] ml-1">FCFA</span>
                   </div>
                 </div>
 
                 <p className="text-xs text-[#999]">
-                  Prix calcul&eacute; au prorata des {daysRemaining} jours restants dans le cycle.
+                  {isNewPlan
+                    ? "Prix pour un mois complet d'accès à Claude AI Team."
+                    : `Prix calculé au prorata des ${daysRemaining} jours restants dans le cycle.`}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Checkout Form */}
+          {/* Form */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
               <h2 className="text-lg font-semibold text-[#1a1a1a] mb-6">Vos informations</h2>
 
               <form onSubmit={handlePayment} className="space-y-5">
-                {/* Connected Account Info */}
                 <div className="bg-[#f5f5f5] rounded-xl p-4 flex items-center gap-3">
                   {user.photoURL && (
                     <img
@@ -371,7 +445,6 @@ export default function CheckoutPage({
                   </div>
                 </div>
 
-                {/* Email to add */}
                 <div>
                   <label
                     htmlFor="emailToAdd"
@@ -394,7 +467,6 @@ export default function CheckoutPage({
                   </p>
                 </div>
 
-                {/* Survey */}
                 <div>
                   <label
                     htmlFor="heardAboutUs"
@@ -420,7 +492,6 @@ export default function CheckoutPage({
                   </select>
                 </div>
 
-                {/* Other source text input */}
                 {heardAboutUs === "Autre" && (
                   <div>
                     <label
@@ -441,17 +512,15 @@ export default function CheckoutPage({
                   </div>
                 )}
 
-                {/* Error */}
                 {error && (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                     <p className="text-sm text-red-700">{error}</p>
                   </div>
                 )}
 
-                {/* Pay Button */}
                 <button
                   type="submit"
-                  disabled={isProcessing || availableSeats <= 0}
+                  disabled={isProcessing || (!isNewPlan && availableSeats <= 0)}
                   className="w-full py-3.5 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {isProcessing ? (
@@ -477,10 +546,10 @@ export default function CheckoutPage({
                       </svg>
                       Traitement en cours...
                     </span>
-                  ) : availableSeats <= 0 ? (
+                  ) : !isNewPlan && availableSeats <= 0 ? (
                     "Plan complet"
                   ) : (
-                    `Payer ${formatPrice(proratedPrice)} FCFA`
+                    `Payer ${formatPrice(price)} FCFA`
                   )}
                 </button>
 

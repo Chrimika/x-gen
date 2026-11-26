@@ -1,14 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { Sparkles, Users, ArrowRight, Shield, Zap, MessageCircle } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, Users, ArrowRight, Shield, Zap, MessageCircle, Clock, UserPlus } from "lucide-react";
 import Header from "@/components/header";
 import PlanCard from "@/components/plan-card";
 import CommunityStats from "@/components/community-stats";
-import { usePlans } from "@/lib/hooks";
+import { usePlans, useWaitingList } from "@/lib/hooks";
+import { formatPrice, DEFAULT_PRICING } from "@/lib/pricing";
 
 export default function HomePage() {
   const { plans, loading } = usePlans();
+  const { entries: waitingList } = useWaitingList();
 
   const activePlans = useMemo(
     () => plans.filter((p) => p.status === "active"),
@@ -142,50 +145,92 @@ export default function HomePage() {
               Cr&eacute;er un nouveau plan
             </h2>
             <p className="text-[#666] leading-relaxed mb-6 max-w-2xl">
-              Vous souhaitez d&eacute;marrer un plan Claude Code Team avec votre propre
-              groupe ? C&apos;est possible d&egrave;s que vous r&eacute;unissez au minimum{" "}
-              <span className="font-semibold text-[#1a1a1a]">2 personnes</span>.
-              Le plan sera cr&eacute;&eacute; sous la gestion X-Gen et chaque membre paiera{" "}
-              <span className="font-semibold text-[#1a1a1a]">21 000 FCFA/mois</span>.
+              Aucun plan actif ne vous convient ? Payez maintenant et rejoignez la
+              liste d&apos;attente. D&egrave;s qu&apos;au moins{" "}
+              <span className="font-semibold text-[#1a1a1a]">2 personnes</span>{" "}
+              ont pay&eacute;, le plan est cr&eacute;&eacute; et tout le monde
+              b&eacute;n&eacute;ficie de l&apos;acc&egrave;s.
+              Prix :{" "}
+              <span className="font-semibold text-[#1a1a1a]">
+                {formatPrice(DEFAULT_PRICING.fullPriceFCFA)} FCFA/mois
+              </span>.
             </p>
+
+            {/* Waiting list status */}
+            {waitingList.length > 0 && (
+              <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(waitingList.length, 5) }, (_, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full bg-[#E8622C]/10 flex items-center justify-center"
+                      >
+                        <Users className="w-4 h-4 text-[#E8622C]" />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900">
+                      {waitingList.length} personne{waitingList.length > 1 ? "s" : ""} en attente
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      {waitingList.length >= 2
+                        ? "Le minimum est atteint ! Le plan sera créé sous peu."
+                        : `Encore ${2 - waitingList.length} personne${2 - waitingList.length > 1 ? "s" : ""} pour démarrer le plan.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <p className="text-3xl font-bold text-[#E8622C]">1.</p>
                 <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  R&eacute;unissez votre groupe
+                  Payez en ligne
                 </p>
                 <p className="text-xs text-[#666] mt-1">
-                  Minimum 2 personnes, maximum 45 par plan.
+                  {formatPrice(DEFAULT_PRICING.fullPriceFCFA)} FCFA pour un mois complet d&apos;acc&egrave;s.
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <p className="text-3xl font-bold text-[#E8622C]">2.</p>
                 <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  Contactez-nous
+                  Patientez
                 </p>
                 <p className="text-xs text-[#666] mt-1">
-                  Via WhatsApp ou email pour initier la cr&eacute;ation.
+                  Le plan d&eacute;marre quand au moins 2 membres ont pay&eacute;.
                 </p>
               </div>
               <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
                 <p className="text-3xl font-bold text-[#E8622C]">3.</p>
                 <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  Acc&egrave;s imm&eacute;diat
+                  Acc&egrave;s activ&eacute;
                 </p>
                 <p className="text-xs text-[#666] mt-1">
-                  Une fois le paiement confirm&eacute;, acc&egrave;s activ&eacute; sous 24h.
+                  Votre email est ajout&eacute; au plan Claude AI Team.
                 </p>
               </div>
             </div>
-            <a
-              href="https://wa.me/237672094167"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white font-semibold rounded-xl hover:bg-[#1fb855] active:scale-[0.97] transition-all duration-200 shadow-sm"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Contacter via WhatsApp
-            </a>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/checkout/new-plan"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <UserPlus className="w-4 h-4" />
+                Payer et rejoindre la liste d&apos;attente
+              </Link>
+              <a
+                href="https://wa.me/237672094167"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#1a1a1a] font-semibold rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Question ? WhatsApp
+              </a>
+            </div>
           </div>
         </div>
       </section>
