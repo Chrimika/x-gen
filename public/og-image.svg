@@ -1,0 +1,24 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#1a1a1a"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#E8622C"/>
+  <!-- Robot icon -->
+  <rect x="80" y="220" width="80" height="60" rx="10" fill="#E8622C"/>
+  <rect x="95" y="235" width="15" height="15" rx="3" fill="white"/>
+  <rect x="130" y="235" width="15" height="15" rx="3" fill="white"/>
+  <rect x="100" y="260" width="30" height="5" rx="2.5" fill="white" opacity="0.8"/>
+  <rect x="90" y="285" width="50" height="30" rx="6" fill="#E8622C"/>
+  <rect x="105" y="293" width="20" height="8" rx="2" fill="white" opacity="0.5"/>
+  <rect x="110" y="200" width="10" height="20" rx="5" fill="#E8622C"/>
+  <!-- Title -->
+  <text x="200" y="260" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800">X-Gen</text>
+  <text x="200" y="310" fill="#E8622C" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="600">Claude Code Team</text>
+  <!-- Subtitle -->
+  <text x="200" y="380" fill="#999" font-family="system-ui, -apple-system, sans-serif" font-size="28">Plans partagés Claude AI | Communauté de développeurs</text>
+  <text x="200" y="420" fill="#666" font-family="system-ui, -apple-system, sans-serif" font-size="22">Abonnement mensuel à partir de 21 000 FCFA</text>
+  <!-- Bottom bar -->
+  <rect x="80" y="490" width="200" height="50" rx="12" fill="#E8622C"/>
+  <text x="115" y="522" fill="white" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="600">Rejoindre</text>
+  <text x="340" y="522" fill="#666" font-family="system-ui, -apple-system, sans-serif" font-size="18">Mobile Money &amp; Carte | NotchPay</text>
+  <!-- URL -->
+  <text x="80" y="590" fill="#555" font-family="system-ui, -apple-system, sans-serif" font-size="20">xgen.dev</text>
+</svg>
