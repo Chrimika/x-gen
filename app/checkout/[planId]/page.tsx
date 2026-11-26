@@ -173,10 +173,10 @@ export default function CheckoutPage({
     );
   }
 
-  const price = isNewPlan
+  const daysRemaining = isNewPlan ? 30 : getDaysRemaining(plan!, now);
+  const price = isNewPlan || isRenewal
     ? DEFAULT_PRICING.fullPriceFCFA
     : getProratedPrice(plan!, undefined, now);
-  const daysRemaining = isNewPlan ? 30 : getDaysRemaining(plan!, now);
   const availableSeats = isNewPlan ? 99 : getAvailableSeats(plan!);
   const countdown = isNewPlan ? "" : getCountdownLabel(plan!, now);
 
@@ -403,7 +403,7 @@ export default function CheckoutPage({
 
                 <div className="flex items-center justify-between">
                   <span className="text-base font-medium text-[#1a1a1a]">
-                    {isNewPlan ? "Prix" : "Prix proraté"}
+                    {isNewPlan || isRenewal ? "Prix" : "Prix proraté"}
                   </span>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-[#E8622C]">
@@ -416,7 +416,9 @@ export default function CheckoutPage({
                 <p className="text-xs text-[#999]">
                   {isNewPlan
                     ? "Prix pour un mois complet d'accès à Claude AI Team."
-                    : `Prix calculé au prorata des ${daysRemaining} jours restants dans le cycle.`}
+                    : isRenewal
+                      ? "Prix pour le prochain cycle complet (1 mois) de Claude AI Team."
+                      : `Prix calculé au prorata des ${daysRemaining} jours restants dans le cycle.`}
                 </p>
               </div>
             </div>

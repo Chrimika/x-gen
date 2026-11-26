@@ -92,7 +92,7 @@ export default function DashboardPage() {
   const daysRemaining = plan ? getDaysRemaining(plan) : 0;
   const countdown = plan ? getCountdownLabel(plan) : "";
   const badge = member ? getStatusBadge(member.status, daysRemaining) : null;
-  const showRenewal = hasSub && daysRemaining <= 5;
+  const showRenewal = hasSub && daysRemaining <= 2;
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">

@@ -212,8 +212,35 @@ export default function PlanCard({ plan, totalGroupSeats }: PlanCardProps) {
         </div>
       </div>
 
-      {/* Join section */}
-      {availableSeats > 0 && plan.status === "active" && (
+      {/* Renewal section — J-2 or less: propose next cycle at full price */}
+      {plan.status === "active" && daysRemaining <= 2 && (
+        <div className="px-6 py-4 bg-gradient-to-r from-[#FFF7F3] to-[#FFF0E8] border-t border-[#E8622C]/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-[#666] mb-0.5">
+                Renouvellement prochain cycle
+              </p>
+              <p className="text-2xl font-bold text-[#E8622C]">
+                {formatPrice(DEFAULT_PRICING.fullPriceFCFA)}{" "}
+                <span className="text-sm font-normal text-[#666]">FCFA/mois</span>
+              </p>
+              <p className="text-xs text-[#666] mt-0.5">
+                Le plan se renouvelle dans {daysRemaining} jour{daysRemaining > 1 ? "s" : ""}
+              </p>
+            </div>
+            <Link
+              href={`/checkout/${plan.id}?type=renewal`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-sm hover:shadow-md"
+            >
+              <Clock className="w-4 h-4" />
+              Renouveler
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Join section — more than 2 days left: prorated price */}
+      {availableSeats > 0 && plan.status === "active" && daysRemaining > 2 && (
         <div className="px-6 py-4 bg-gradient-to-r from-[#FFF7F3] to-[#FFF0E8] border-t border-[#E8622C]/10">
           <div className="flex items-center justify-between">
             <div>
@@ -239,8 +266,8 @@ export default function PlanCard({ plan, totalGroupSeats }: PlanCardProps) {
         </div>
       )}
 
-      {/* Full indicator */}
-      {availableSeats === 0 && (
+      {/* Full indicator — only when more than 2 days left (at J-2, renewal section shows instead) */}
+      {availableSeats === 0 && daysRemaining > 2 && (
         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
           <p className="text-sm text-center text-[#666] font-medium">
             Ce plan est complet
