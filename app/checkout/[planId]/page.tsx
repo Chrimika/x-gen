@@ -143,7 +143,7 @@ export default function CheckoutPage({
             Vous devez vous connecter avant de proc&eacute;der au paiement.
           </p>
           <Link
-            href="/login"
+            href={`/login?redirect=/checkout/${planId}`}
             className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
           >
             Se connecter

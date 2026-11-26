@@ -3,8 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
@@ -16,7 +15,7 @@ interface AuthState {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
-  signIn: () => Promise<void>;
+  signIn: (redirectTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -34,18 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          window.location.href = "/dashboard";
-        }
-      })
-      .catch(() => {});
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {
+        setAuthCookies(false);
         try {
           const adminDoc = await getDoc(doc(db, "admins", firebaseUser.email!));
           const admin = adminDoc.exists();
@@ -66,9 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async () => {
+  const signIn = async (redirectTo = "/dashboard") => {
     try {
-      await signInWithRedirect(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      // The proxy reads this cookie; set it before navigating so /dashboard isn't bounced to /login.
+      setAuthCookies(false);
+      try {
+        const adminDoc = await getDoc(doc(db, "admins", result.user.email!));
+        if (adminDoc.exists()) setAuthCookies(true);
+      } catch {}
+      window.location.assign(redirectTo);
     } catch (error) {
       console.error("Sign in error:", error);
     }

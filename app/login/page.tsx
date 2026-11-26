@@ -4,13 +4,18 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
+function getRedirectTarget(): string {
+  const target = new URLSearchParams(window.location.search).get("redirect");
+  return target && target.startsWith("/") && !target.startsWith("//") ? target : "/dashboard";
+}
+
 export default function LoginPage() {
   const { user, loading, signIn } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard");
+      router.replace(getRedirectTarget());
     }
   }, [user, loading, router]);
 
@@ -75,7 +80,7 @@ export default function LoginPage() {
 
         {/* Google Sign-in Button */}
         <button
-          onClick={signIn}
+          onClick={() => signIn(getRedirectTarget())}
           className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-xl px-6 py-3 text-[#1a1a1a] font-medium text-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer"
         >
           {/* Google Icon */}
