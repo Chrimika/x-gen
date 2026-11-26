@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: check if user is admin
+    function isAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    // Config — readable by all, writable by admins only
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Admins collection — readable by authenticated users (to check status), writable by admins
+    match /admins/{email} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Plans — readable by all, writable by admins only
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Members — readable by the member themselves or admin, writable by admin
+    // Also allows creation during checkout (authenticated users can create their own record)
+    match /members/{memberId} {
+      allow read: if isAuth() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuth() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Payments — created by authenticated users, readable/writable by admin
+    // The webhook handler uses admin SDK so bypasses these rules
+    match /payments/{paymentId} {
+      allow read: if isAuth() && (resource.data.memberUid == request.auth.uid || isAdmin());
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+
+    // Waiting list — readable by all, creatable by authenticated users
+    match /waitingList/{entryId} {
+      allow read: if true;
+      allow create: if isAuth();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
