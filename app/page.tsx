@@ -279,7 +279,7 @@ export default function HomePage() {
                 <li>Email: contact@mikamba.cm</li>
                 <li>
                   <a
-                    href="https://chat.whatsapp.com/example"
+                    href="https://chat.whatsapp.com/JcN64bbs3bYAfdi9EcqoMf"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-[#E8622C] transition-colors"
