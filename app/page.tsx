@@ -35,7 +35,7 @@ export default function HomePage() {
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#1a1a1a] leading-tight tracking-tight">
               Claude Code Team
               <br />
-              <span className="text-[#E8622C]">Acc&egrave;s Pro Simplifi&eacute;</span>
+              <span className="text-[#E8622C]">Acc&egrave;s Simplifi&eacute;</span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-[#666] leading-relaxed max-w-2xl mx-auto">
               Rejoignez une communaut&eacute; de d&eacute;veloppeurs qui partagent l&apos;acc&egrave;s &agrave;
