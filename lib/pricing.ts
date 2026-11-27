@@ -93,7 +93,8 @@ export function getAvailableSeats(plan: Plan): number {
  * Formats FCFA price with thousand separators.
  */
 export function formatPrice(amount: number): string {
-  return amount.toLocaleString("fr-FR");
+  // fr-FR groups with U+202F, which the display font has no glyph for.
+  return amount.toLocaleString("fr-FR").replace(/ /g, " ");
 }
 
 /**

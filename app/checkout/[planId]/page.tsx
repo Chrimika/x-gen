@@ -55,8 +55,8 @@ export default function CheckoutPage({
 
   if (loading || (!isNewPlan && planLoading)) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5]">
-        <div className="animate-pulse text-[#666]">Chargement...</div>
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream">
+        <div className="chip bg-white animate-pulse">Chargement...</div>
       </div>
     );
   }
@@ -64,16 +64,16 @@ export default function CheckoutPage({
   // Success state
   if (isSuccess) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5] px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream px-4 py-10">
+        <div className="w-full max-w-md brut-card p-6 sm:p-8 text-center animate-rise">
+          <div className="w-16 h-16 bg-[#bbf7d0] border-2 border-ink rounded-2xl flex items-center justify-center mx-auto mb-5 brut-sm">
             <svg
               width="32"
               height="32"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#22c55e"
-              strokeWidth="2.5"
+              stroke="#141414"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -82,17 +82,17 @@ export default function CheckoutPage({
           </div>
           {isNewPlan ? (
             <>
-              <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">Paiement re&ccedil;u !</h1>
-              <p className="text-[#666] text-sm mb-6">
-                Vous &ecirc;tes maintenant en <span className="font-semibold text-[#E8622C]">liste d&apos;attente</span>.
+              <h1 className="text-3xl font-extrabold tracking-tight text-ink mb-3">Paiement re&ccedil;u !</h1>
+              <p className="text-muted text-sm mb-6">
+                Vous &ecirc;tes maintenant en <span className="font-bold text-brand">liste d&apos;attente</span>.
                 D&egrave;s qu&apos;un deuxi&egrave;me membre aura &eacute;galement pay&eacute;, le plan sera cr&eacute;&eacute;
                 et votre acc&egrave;s sera activ&eacute;. Vous serez notifi&eacute; par email.
               </p>
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">Paiement r&eacute;ussi !</h1>
-              <p className="text-[#666] text-sm mb-6">
+              <h1 className="text-3xl font-extrabold tracking-tight text-ink mb-3">Paiement r&eacute;ussi !</h1>
+              <p className="text-muted text-sm mb-6">
                 Votre paiement a &eacute;t&eacute; re&ccedil;u avec succ&egrave;s. Vous recevrez un
                 email de confirmation sous peu. Votre acc&egrave;s sera activ&eacute; dans les
                 prochaines heures.
@@ -100,16 +100,10 @@ export default function CheckoutPage({
             </>
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
-            >
+            <Link href="/dashboard" className="btn bg-brand text-white w-full sm:w-auto">
               Aller au tableau de bord
             </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center px-6 py-3 bg-gray-100 text-[#1a1a1a] font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm"
-            >
+            <Link href="/" className="btn bg-white text-ink w-full sm:w-auto">
               Retour &agrave; l&apos;accueil
             </Link>
           </div>
@@ -121,16 +115,16 @@ export default function CheckoutPage({
   // Not logged in
   if (!user) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5] px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream px-4 py-10">
+        <div className="w-full max-w-md brut-card p-6 sm:p-8 text-center animate-rise">
+          <div className="w-16 h-16 bg-peach border-2 border-ink rounded-2xl flex items-center justify-center mx-auto mb-5 brut-sm">
             <svg
               width="28"
               height="28"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#E8622C"
-              strokeWidth="2"
+              stroke="#141414"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -138,13 +132,13 @@ export default function CheckoutPage({
               <circle cx="12" cy="7" r="4" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-[#1a1a1a] mb-2">Connexion requise</h1>
-          <p className="text-[#666] text-sm mb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink mb-3">Connexion requise</h1>
+          <p className="text-muted text-sm mb-6">
             Vous devez vous connecter avant de proc&eacute;der au paiement.
           </p>
           <Link
             href={`/login?redirect=/checkout/${planId}`}
-            className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
+            className="btn bg-brand text-white w-full sm:w-auto"
           >
             Se connecter
           </Link>
@@ -156,16 +150,13 @@ export default function CheckoutPage({
   // Plan not found (only for existing plans)
   if (!isNewPlan && !plan) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5] px-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
-          <h1 className="text-xl font-bold text-[#1a1a1a] mb-2">Plan introuvable</h1>
-          <p className="text-[#666] text-sm mb-6">
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream px-4 py-10">
+        <div className="w-full max-w-md brut-card p-6 sm:p-8 text-center animate-rise">
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink mb-3">Plan introuvable</h1>
+          <p className="text-muted text-sm mb-6">
             Le plan demand&eacute; n&apos;existe pas ou n&apos;est plus disponible.
           </p>
-          <Link
-            href="/"
-            className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
-          >
+          <Link href="/" className="btn bg-brand text-white w-full sm:w-auto">
             Voir les plans disponibles
           </Link>
         </div>
@@ -303,44 +294,32 @@ export default function CheckoutPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-cream">
+      <header className="px-4 sm:px-6 pt-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 bg-white brut rounded-full px-3 sm:px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 48 48"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="8" y="4" width="32" height="24" rx="4" fill="#E8622C" />
-              <rect x="14" y="12" width="6" height="6" rx="1" fill="white" />
-              <rect x="28" y="12" width="6" height="6" rx="1" fill="white" />
-              <rect x="17" y="14" width="2" height="2" fill="#1a1a1a" />
-              <rect x="31" y="14" width="2" height="2" fill="#1a1a1a" />
-              <rect x="22" y="0" width="4" height="6" rx="2" fill="#E8622C" />
-              <rect x="18" y="22" width="12" height="2" rx="1" fill="white" />
-              <rect x="14" y="30" width="20" height="12" rx="3" fill="#E8622C" />
-              <rect x="20" y="33" width="8" height="3" rx="1" fill="white" opacity="0.6" />
-              <rect x="6" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-              <rect x="36" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-              <rect x="18" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-              <rect x="26" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-            </svg>
-            <span className="text-lg font-bold text-[#1a1a1a]">X-Gen</span>
+            <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-brand border-2 border-ink text-white text-lg font-extrabold">
+              X
+            </span>
+            <span className="text-xl font-extrabold tracking-tight text-ink">X-Gen</span>
           </Link>
-          <Link href="/" className="text-sm text-[#666] hover:text-[#1a1a1a] transition-colors">
+          <Link href="/" className="chip bg-white hover:bg-peach transition-colors">
             &larr; Retour aux plans
           </Link>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-        <h1 className="text-2xl font-bold text-[#1a1a1a] mb-2">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <span className={`chip ${isNewPlan ? "bg-sun" : isRenewal ? "bg-peach" : "bg-white"}`}>
+            {isNewPlan ? "Liste d'attente" : isRenewal ? "Renouvellement" : "Nouvel abonnement"}
+          </span>
+          <span className="chip bg-white">NotchPay</span>
+        </div>
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-ink leading-tight mb-3">
           {isNewPlan ? "Nouveau plan — Liste d'attente" : isRenewal ? "Renouvellement" : "Paiement"}
         </h1>
-        <p className="text-[#666] text-sm mb-8">
+        <p className="text-muted text-base mb-8 max-w-2xl">
           {isNewPlan
             ? "Payez maintenant et patientez. Dès qu'un 2e membre paie, le plan est créé et vous bénéficiez de l'accès."
             : isRenewal
@@ -348,25 +327,25 @@ export default function CheckoutPage({
               : "Finalisez votre inscription pour rejoindre une équipe Claude AI."}
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-start">
           {/* Summary */}
-          <div className="lg:col-span-2 order-first lg:order-last">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-[#1a1a1a] mb-4">R&eacute;capitulatif</h2>
+          <div className="lg:col-span-2 order-first lg:order-last lg:sticky lg:top-6">
+            <div className="brut-card p-5 sm:p-6 animate-rise">
+              <h2 className="text-xl font-extrabold tracking-tight text-ink mb-4">R&eacute;capitulatif</h2>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {isNewPlan ? (
                   <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">Type</span>
-                      <span className="text-sm font-medium text-[#E8622C]">Nouveau plan</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted">Type</span>
+                      <span className="text-sm font-bold text-brand">Nouveau plan</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">Dur&eacute;e</span>
-                      <span className="text-sm font-medium text-[#1a1a1a]">1 mois complet</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted">Dur&eacute;e</span>
+                      <span className="text-sm font-bold text-ink">1 mois complet</span>
                     </div>
-                    <div className="bg-blue-50 rounded-xl p-3">
-                      <p className="text-xs text-blue-700">
+                    <div className="rounded-2xl border-2 border-ink bg-peach p-3">
+                      <p className="text-xs font-medium text-ink">
                         Vous serez plac&eacute; en liste d&apos;attente. Le plan d&eacute;marre d&egrave;s qu&apos;au moins
                         2 personnes ont pay&eacute;.
                       </p>
@@ -374,46 +353,46 @@ export default function CheckoutPage({
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">Plan</span>
-                      <span className="text-sm font-medium text-[#1a1a1a]">{plan!.name}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted">Plan</span>
+                      <span className="text-sm font-bold text-ink truncate">{plan!.name}</span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">Jours restants</span>
-                      <span className="text-sm font-medium text-[#E8622C]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted">Jours restants</span>
+                      <span className="chip bg-sun !text-xs">
                         {daysRemaining} jours ({countdown})
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">Places disponibles</span>
-                      <span className="text-sm font-medium text-[#1a1a1a]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted">Places disponibles</span>
+                      <span className="text-sm font-bold text-ink">
                         {availableSeats} / {plan!.totalSeats}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#666]">P&eacute;riode</span>
-                      <span className="text-sm text-[#1a1a1a]">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-sm text-muted shrink-0">P&eacute;riode</span>
+                      <span className="text-sm font-medium text-ink text-right">
                         {formatDate(plan!.startDate)} &mdash; {formatDate(plan!.endDate)}
                       </span>
                     </div>
                   </>
                 )}
 
-                <hr className="border-gray-100" />
+                <div className="border-t-2 border-dashed border-ink/30 my-2" />
 
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-medium text-[#1a1a1a]">
+                <div className="rounded-2xl border-2 border-ink bg-brand text-white p-4 brut-sm">
+                  <span className="text-sm font-bold opacity-90">
                     {isNewPlan || isRenewal ? "Prix" : "Prix proraté"}
                   </span>
-                  <div className="text-right">
-                    <span className="text-2xl font-bold text-[#E8622C]">
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-4xl font-extrabold tracking-tight">
                       {formatPrice(price)}
                     </span>
-                    <span className="text-sm text-[#666] ml-1">FCFA</span>
+                    <span className="text-base font-bold">FCFA</span>
                   </div>
                 </div>
 
-                <p className="text-xs text-[#999]">
+                <p className="text-xs text-muted">
                   {isNewPlan
                     ? "Prix pour un mois complet d'accès à Claude AI Team."
                     : isRenewal
@@ -426,31 +405,31 @@ export default function CheckoutPage({
 
           {/* Form */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-              <h2 className="text-lg font-semibold text-[#1a1a1a] mb-6">Vos informations</h2>
+            <div className="brut-card p-5 sm:p-8 animate-rise">
+              <h2 className="text-xl font-extrabold tracking-tight text-ink mb-6">Vos informations</h2>
 
               <form onSubmit={handlePayment} className="space-y-5">
-                <div className="bg-[#f5f5f5] rounded-xl p-4 flex items-center gap-3">
+                <div className="rounded-2xl border-2 border-ink bg-cream p-3 sm:p-4 flex items-center gap-3">
                   {user.photoURL && (
                     <img
                       src={user.photoURL}
                       alt=""
-                      className="w-10 h-10 rounded-full"
+                      className="w-10 h-10 rounded-full border-2 border-ink shrink-0"
                       referrerPolicy="no-referrer"
                     />
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-[#1a1a1a]">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-ink truncate">
                       {user.displayName || "Utilisateur"}
                     </p>
-                    <p className="text-xs text-[#666]">{user.email}</p>
+                    <p className="text-xs text-muted truncate">{user.email}</p>
                   </div>
                 </div>
 
                 <div>
                   <label
                     htmlFor="emailToAdd"
-                    className="block text-sm font-medium text-[#1a1a1a] mb-2"
+                    className="block text-sm font-bold text-ink mb-2"
                   >
                     Email &agrave; ajouter au plan Claude
                   </label>
@@ -460,10 +439,10 @@ export default function CheckoutPage({
                     value={emailToAdd}
                     onChange={(e) => setEmailToAdd(e.target.value)}
                     placeholder="votre-email@exemple.com"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-[#1a1a1a] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[#E8622C]/30 focus:border-[#E8622C] transition-colors"
+                    className="field"
                     required
                   />
-                  <p className="text-xs text-[#999] mt-1.5">
+                  <p className="text-xs text-muted mt-2">
                     C&apos;est l&apos;adresse email qui sera ajout&eacute;e &agrave;
                     l&apos;&eacute;quipe Claude AI.
                   </p>
@@ -472,33 +451,48 @@ export default function CheckoutPage({
                 <div>
                   <label
                     htmlFor="heardAboutUs"
-                    className="block text-sm font-medium text-[#1a1a1a] mb-2"
+                    className="block text-sm font-bold text-ink mb-2"
                   >
                     O&ugrave; avez-vous entendu parler de nous ?
                   </label>
-                  <select
-                    id="heardAboutUs"
-                    value={heardAboutUs}
-                    onChange={(e) => setHeardAboutUs(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-[#1a1a1a] bg-white focus:outline-none focus:ring-2 focus:ring-[#E8622C]/30 focus:border-[#E8622C] transition-colors appearance-none cursor-pointer"
-                    required
-                  >
-                    <option value="" disabled>
-                      S&eacute;lectionnez une option
-                    </option>
-                    {SURVEY_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
+                  <div className="relative">
+                    <select
+                      id="heardAboutUs"
+                      value={heardAboutUs}
+                      onChange={(e) => setHeardAboutUs(e.target.value)}
+                      className="field appearance-none cursor-pointer pr-11"
+                      required
+                    >
+                      <option value="" disabled>
+                        S&eacute;lectionnez une option
                       </option>
-                    ))}
-                  </select>
+                      {SURVEY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <svg
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#141414"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
                 </div>
 
                 {heardAboutUs === "Autre" && (
                   <div>
                     <label
                       htmlFor="otherSource"
-                      className="block text-sm font-medium text-[#1a1a1a] mb-2"
+                      className="block text-sm font-bold text-ink mb-2"
                     >
                       Pr&eacute;cisez
                     </label>
@@ -508,22 +502,22 @@ export default function CheckoutPage({
                       value={otherSource}
                       onChange={(e) => setOtherSource(e.target.value)}
                       placeholder="Comment nous avez-vous découvert ?"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-[#1a1a1a] placeholder-[#999] focus:outline-none focus:ring-2 focus:ring-[#E8622C]/30 focus:border-[#E8622C] transition-colors"
+                      className="field"
                       required
                     />
                   </div>
                 )}
 
                 {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                    <p className="text-sm text-red-700">{error}</p>
+                  <div className="rounded-2xl border-2 border-ink bg-red-100 p-3">
+                    <p className="text-sm font-medium text-ink">{error}</p>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={isProcessing || (!isNewPlan && availableSeats <= 0)}
-                  className="w-full py-3.5 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  disabled={isProcessing || (!isNewPlan && !isRenewal && availableSeats <= 0)}
+                  className="btn bg-brand text-white w-full text-base"
                 >
                   {isProcessing ? (
                     <span className="flex items-center justify-center gap-2">
@@ -548,14 +542,14 @@ export default function CheckoutPage({
                       </svg>
                       Traitement en cours...
                     </span>
-                  ) : !isNewPlan && availableSeats <= 0 ? (
+                  ) : !isNewPlan && !isRenewal && availableSeats <= 0 ? (
                     "Plan complet"
                   ) : (
                     `Payer ${formatPrice(price)} FCFA`
                   )}
                 </button>
 
-                <p className="text-xs text-center text-[#999]">
+                <p className="text-xs text-center text-muted">
                   Paiement s&eacute;curis&eacute; via NotchPay. Vous serez redirig&eacute; pour
                   finaliser le paiement.
                 </p>

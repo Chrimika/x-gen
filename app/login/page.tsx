@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
 function getRedirectTarget(): string {
@@ -21,8 +22,8 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5]">
-        <div className="animate-pulse text-[#666]">Chargement...</div>
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream">
+        <div className="chip bg-white animate-pulse">Chargement...</div>
       </div>
     );
   }
@@ -32,58 +33,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5] px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6">
-        {/* X-Gen Logo - Orange Pixel Robot */}
-        <div className="flex items-center gap-3">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="X-Gen logo"
-          >
-            {/* Head */}
-            <rect x="8" y="4" width="32" height="24" rx="4" fill="#E8622C" />
-            {/* Eyes */}
-            <rect x="14" y="12" width="6" height="6" rx="1" fill="white" />
-            <rect x="28" y="12" width="6" height="6" rx="1" fill="white" />
-            {/* Pupils */}
-            <rect x="17" y="14" width="2" height="2" fill="#1a1a1a" />
-            <rect x="31" y="14" width="2" height="2" fill="#1a1a1a" />
-            {/* Antenna */}
-            <rect x="22" y="0" width="4" height="6" rx="2" fill="#E8622C" />
-            {/* Mouth */}
-            <rect x="18" y="22" width="12" height="2" rx="1" fill="white" />
-            {/* Body */}
-            <rect x="14" y="30" width="20" height="12" rx="3" fill="#E8622C" />
-            {/* Body details */}
-            <rect x="20" y="33" width="8" height="3" rx="1" fill="white" opacity="0.6" />
-            {/* Arms */}
-            <rect x="6" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-            <rect x="36" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-            {/* Legs */}
-            <rect x="18" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-            <rect x="26" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-          </svg>
-          <span className="text-2xl font-bold text-[#1a1a1a]">X-Gen</span>
+    <div className="flex flex-1 items-center justify-center min-h-screen bg-cream px-4 py-10">
+      <div className="w-full max-w-md brut-card p-6 sm:p-8 flex flex-col gap-6 animate-rise">
+        <Link href="/" className="flex items-center gap-2.5 self-start">
+          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-brand border-2 border-ink text-white text-xl font-extrabold">
+            X
+          </span>
+          <span className="text-2xl font-extrabold tracking-tight text-ink">X-Gen</span>
+        </Link>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="chip bg-peach">Claude Code Team</span>
+          <span className="chip bg-sun">Mobile Money</span>
         </div>
 
-        {/* Title */}
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-[#1a1a1a]">Connexion</h1>
-          <p className="mt-2 text-[#666] text-sm">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink leading-tight">
+            Connexion
+          </h1>
+          <p className="mt-2 text-muted text-base">
             Connectez-vous pour acc&eacute;der &agrave; votre espace
           </p>
         </div>
 
-        {/* Google Sign-in Button */}
         <button
           onClick={() => signIn(getRedirectTarget())}
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-xl px-6 py-3 text-[#1a1a1a] font-medium text-sm hover:bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer"
+          className="btn bg-white text-ink w-full"
         >
-          {/* Google Icon */}
           <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -105,8 +81,7 @@ export default function LoginPage() {
           Continuer avec Google
         </button>
 
-        {/* Footer */}
-        <p className="text-xs text-[#999] text-center mt-2">
+        <p className="text-xs text-muted text-center">
           En vous connectant, vous acceptez nos conditions d&apos;utilisation.
         </p>
       </div>

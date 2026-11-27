@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Flag, User, UserPlus, Clock, Calendar, DollarSign, Users } from "lucide-react";
+import { Flag, User, UserPlus, RefreshCw, ArrowRight } from "lucide-react";
 import type { Plan } from "@/lib/types";
 import {
   getCycleDays,
@@ -13,7 +13,6 @@ import {
   getAvailableSeats,
   formatPrice,
   formatDate,
-  getCountdownLabel,
   DEFAULT_PRICING,
 } from "@/lib/pricing";
 
@@ -22,16 +21,10 @@ interface PlanCardProps {
   totalGroupSeats?: number;
 }
 
-function getCountdownColor(daysRemaining: number): string {
-  if (daysRemaining > 15) return "bg-[#22c55e]";
-  if (daysRemaining >= 5) return "bg-[#f59e0b]";
-  return "bg-[#ef4444]";
-}
-
-function getCountdownTextColor(daysRemaining: number): string {
-  if (daysRemaining > 15) return "text-[#22c55e]";
-  if (daysRemaining >= 5) return "text-[#f59e0b]";
-  return "text-[#ef4444]";
+function urgency(daysRemaining: number) {
+  if (daysRemaining > 15) return { bg: "bg-[#7ee0a1]", bar: "bg-[#22c55e]", text: "text-[#16a34a]" };
+  if (daysRemaining >= 5) return { bg: "bg-sun", bar: "bg-sun", text: "text-[#d97706]" };
+  return { bg: "bg-[#ff8a80]", bar: "bg-[#ef4444]", text: "text-[#ef4444]" };
 }
 
 export default function PlanCard({ plan, totalGroupSeats }: PlanCardProps) {
@@ -43,237 +36,178 @@ export default function PlanCard({ plan, totalGroupSeats }: PlanCardProps) {
   const progress = getCycleProgress(plan, now);
   const proratedPrice = getProratedPrice(plan, DEFAULT_PRICING, now);
   const availableSeats = getAvailableSeats(plan);
-  const countdownLabel = getCountdownLabel(plan, now);
-  const amountCollectedFCFA = plan.occupiedSeats * DEFAULT_PRICING.fullPriceFCFA;
   const groupPercentage = totalGroupSeats
     ? Math.round((plan.occupiedSeats / totalGroupSeats) * 100)
     : null;
+  const tone = urgency(daysRemaining);
+  const isRenewalWindow = plan.status === "active" && daysRemaining <= 2;
 
-  // Build timeline dots: we show up to ~31 dots for a typical month
   const timelineDots = useMemo(() => {
-    const dots: Array<"passed" | "today" | "remaining" | "flag"> = [];
-    // Cap displayed dots to keep the UI manageable
     const maxDots = Math.min(cycleDays, 31);
     const scale = cycleDays / maxDots;
-
-    for (let i = 0; i < maxDots; i++) {
+    return Array.from({ length: maxDots }, (_, i) => {
       const dayIndex = Math.round(i * scale);
-      if (dayIndex < daysElapsed) {
-        dots.push("passed");
-      } else if (dayIndex === daysElapsed) {
-        dots.push("today");
-      } else {
-        dots.push("remaining");
-      }
-    }
-    dots.push("flag");
-    return dots;
+      if (dayIndex < daysElapsed) return "passed" as const;
+      if (dayIndex === daysElapsed) return "today" as const;
+      return "remaining" as const;
+    });
   }, [cycleDays, daysElapsed]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+    <article className="brut-card pop overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4">
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="min-w-0">
-            <h3 className="text-lg sm:text-xl font-bold text-[#1a1a1a] truncate">{plan.name}</h3>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-xs sm:text-sm text-[#666]">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
-                Achat: {formatDate(plan.startDate)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                Fin: {formatDate(plan.endDate)}
-              </span>
-            </div>
+      <div className="p-5 sm:p-6 pb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{plan.name}</h3>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <span className="chip bg-white">D&eacute;but {formatDate(plan.startDate)}</span>
+            <span className="chip bg-peach">Fin {formatDate(plan.endDate)}</span>
           </div>
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold text-white flex-shrink-0 ${getCountdownColor(daysRemaining)}`}
-          >
-            {countdownLabel}
-          </span>
+        </div>
+        <div
+          className={`shrink-0 grid place-items-center w-[68px] h-[68px] sm:w-20 sm:h-20 rounded-full ${tone.bg} border-[2.5px] border-ink shadow-[3px_3px_0_var(--ink)] rotate-[8deg]`}
+        >
+          <div className="text-center leading-none">
+            <span className="block text-[10px] font-bold uppercase tracking-wider">reste</span>
+            <span className="block text-xl sm:text-2xl font-extrabold">J-{daysRemaining}</span>
+          </div>
         </div>
       </div>
 
-      {/* Timeline dots */}
-      <div className="px-4 sm:px-6 pb-2">
-        <div className="flex items-center gap-[2px] sm:gap-[3px] flex-wrap">
-          {timelineDots.map((type, i) => {
-            if (type === "flag") {
-              return (
-                <Flag
-                  key={i}
-                  className={`w-3.5 h-3.5 ml-0.5 ${getCountdownTextColor(daysRemaining)}`}
-                  fill="currentColor"
-                />
-              );
-            }
-            if (type === "passed") {
-              return (
-                <span
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-[#22c55e] flex-shrink-0"
-                />
-              );
-            }
-            if (type === "today") {
-              return (
-                <span
-                  key={i}
-                  className="w-2.5 h-2.5 rounded-full border-2 border-[#3b82f6] bg-white flex-shrink-0"
-                />
-              );
-            }
-            // remaining
-            return (
-              <span
-                key={i}
-                className="w-2 h-2 rounded-full bg-gray-200 flex-shrink-0"
-              />
-            );
-          })}
+      {/* Timeline */}
+      <div className="px-5 sm:px-6">
+        <div className="flex items-center gap-[3px] flex-wrap">
+          {timelineDots.map((type, i) => (
+            <span
+              key={i}
+              className={
+                type === "passed"
+                  ? "w-2 h-2 rounded-full bg-ink"
+                  : type === "today"
+                    ? "w-3 h-3 rounded-full bg-brand border-2 border-ink"
+                    : "w-2 h-2 rounded-full bg-white border border-ink/40"
+              }
+            />
+          ))}
+          <Flag className={`w-4 h-4 ml-0.5 ${tone.text}`} fill="currentColor" strokeWidth={2.5} />
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="mt-3 h-4 rounded-full border-2 border-ink bg-white overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${progress}%`,
-              background:
-                daysRemaining > 15
-                  ? "linear-gradient(90deg, #22c55e, #4ade80)"
-                  : daysRemaining >= 5
-                    ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
-                    : "linear-gradient(90deg, #ef4444, #f87171)",
-            }}
+            className={`h-full ${tone.bar} border-r-2 border-ink transition-[width] duration-700`}
+            style={{ width: `${Math.max(progress, 4)}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1 text-xs text-[#666]">
+        <div className="flex justify-between mt-1.5 text-xs font-semibold text-muted">
           <span>Jour {daysElapsed}/{cycleDays}</span>
           <span>{progress}% du cycle</span>
         </div>
       </div>
 
-      {/* Seats visualization */}
-      <div className="px-4 sm:px-6 py-4 border-t border-gray-50">
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap mb-3">
-          {Array.from({ length: plan.totalSeats }).map((_, i) => (
-            <div
-              key={i}
-              className={`flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg ${
-                i < plan.occupiedSeats
-                  ? "bg-[#E8622C]/10"
-                  : "bg-gray-100"
-              }`}
-            >
-              <User
-                className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                  i < plan.occupiedSeats
-                    ? "text-[#E8622C]"
-                    : "text-gray-300"
+      {/* Seats */}
+      <div className="px-5 sm:px-6 pt-5">
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from({ length: plan.totalSeats }).map((_, i) => {
+            const taken = i < plan.occupiedSeats;
+            return (
+              <span
+                key={i}
+                className={`grid place-items-center w-6 h-6 sm:w-7 sm:h-7 rounded-lg border-2 border-ink ${
+                  taken ? "bg-brand text-white" : "bg-white text-ink/25"
                 }`}
-              />
-            </div>
-          ))}
+              >
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
+              </span>
+            );
+          })}
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#666] flex-shrink-0" />
-            <span className="text-[#666]">Places:</span>
-            <span className="font-semibold text-[#1a1a1a]">
-              {plan.occupiedSeats}/{plan.totalSeats}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#666] flex-shrink-0" />
-            <span className="text-[#666]">Prix:</span>
-            <span className="font-semibold text-[#1a1a1a]">
-              ${plan.priceUSD}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <span className="text-[#666]">Collect&eacute;:</span>
-            <span className="font-semibold text-[#1a1a1a]">
-              {formatPrice(amountCollectedFCFA)} FCFA
-            </span>
-          </div>
-          {groupPercentage !== null && (
-            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <span className="text-[#666]">% du groupe:</span>
-              <span className="font-semibold text-[#1a1a1a]">
-                {groupPercentage}%
-              </span>
-            </div>
-          )}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+          <Stat label="Places" value={`${plan.occupiedSeats}/${plan.totalSeats}`} />
+          <Stat label="Prix" value={`$${plan.priceUSD}`} />
+          <Stat label="Collecté" value={formatPrice(plan.occupiedSeats * DEFAULT_PRICING.fullPriceFCFA)} />
+          <Stat label="% groupe" value={groupPercentage !== null ? `${groupPercentage}%` : "—"} />
         </div>
       </div>
 
-      {/* Renewal section — J-2 or less: propose next cycle at full price */}
-      {plan.status === "active" && daysRemaining <= 2 && (
-        <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-[#FFF7F3] to-[#FFF0E8] border-t border-[#E8622C]/10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-xs sm:text-sm text-[#666] mb-0.5">
-                Renouvellement prochain cycle
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-[#E8622C]">
-                {formatPrice(DEFAULT_PRICING.fullPriceFCFA)}{" "}
-                <span className="text-xs sm:text-sm font-normal text-[#666]">FCFA/mois</span>
-              </p>
-              <p className="text-xs text-[#666] mt-0.5">
-                Le plan se renouvelle dans {daysRemaining} jour{daysRemaining > 1 ? "s" : ""}
-              </p>
-            </div>
-            <Link
-              href={`/checkout/${plan.id}?type=renewal`}
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-sm hover:shadow-md text-sm"
-            >
-              <Clock className="w-4 h-4" />
-              Renouveler
-            </Link>
-          </div>
-        </div>
-      )}
+      <div className="flex-1" />
 
-      {/* Join section — more than 2 days left: prorated price */}
-      {availableSeats > 0 && plan.status === "active" && daysRemaining > 2 && (
-        <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-[#FFF7F3] to-[#FFF0E8] border-t border-[#E8622C]/10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-xs sm:text-sm text-[#666] mb-0.5">
-                Rejoindre maintenant
-              </p>
-              <p className="text-xl sm:text-2xl font-bold text-[#E8622C]">
-                {formatPrice(proratedPrice)}{" "}
-                <span className="text-xs sm:text-sm font-normal text-[#666]">FCFA</span>
-              </p>
-              <p className="text-xs text-[#666] mt-0.5">
-                Prix ajust&eacute; &mdash; {daysRemaining} jours restants
-              </p>
-            </div>
-            <Link
-              href={`/checkout/${plan.id}`}
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-sm hover:shadow-md text-sm"
-            >
-              <UserPlus className="w-4 h-4" />
-              Rejoindre
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Full indicator — only when more than 2 days left (at J-2, renewal section shows instead) */}
-      {availableSeats === 0 && daysRemaining > 2 && (
-        <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-100">
-          <p className="text-sm text-center text-[#666] font-medium">
+      {/* Action */}
+      <div className="p-4 sm:p-5 mt-5">
+        {isRenewalWindow ? (
+          <ActionBox
+            tone="bg-sun"
+            eyebrow="Prochain cycle"
+            price={DEFAULT_PRICING.fullPriceFCFA}
+            unit="FCFA / mois"
+            note={`Renouvellement dans ${daysRemaining} jour${daysRemaining > 1 ? "s" : ""}`}
+            href={`/checkout/${plan.id}?type=renewal`}
+            cta="Renouveler"
+            icon={<RefreshCw className="w-4 h-4" strokeWidth={2.5} />}
+          />
+        ) : availableSeats > 0 && plan.status === "active" ? (
+          <ActionBox
+            tone="bg-peach"
+            eyebrow="Rejoindre maintenant"
+            price={proratedPrice}
+            unit="FCFA"
+            note={`Prix ajusté — ${daysRemaining} jours restants`}
+            href={`/checkout/${plan.id}`}
+            cta="Rejoindre"
+            icon={<UserPlus className="w-4 h-4" strokeWidth={2.5} />}
+          />
+        ) : (
+          <div className="rounded-3xl border-2 border-dashed border-ink/50 p-4 text-center font-bold text-muted">
             Ce plan est complet
-          </p>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border-2 border-ink bg-white px-2.5 py-2">
+      <p className="text-lg font-extrabold leading-tight truncate">{value}</p>
+      <p className="text-[11px] font-semibold text-muted uppercase tracking-wide">{label}</p>
+    </div>
+  );
+}
+
+function ActionBox({
+  tone,
+  eyebrow,
+  price,
+  unit,
+  note,
+  href,
+  cta,
+  icon,
+}: {
+  tone: string;
+  eyebrow: string;
+  price: number;
+  unit: string;
+  note: string;
+  href: string;
+  cta: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className={`${tone} rounded-3xl border-[2.5px] border-ink p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3`}>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide">{eyebrow}</p>
+        <p className="text-3xl font-extrabold tracking-tight leading-tight">
+          {formatPrice(price)} <span className="text-sm font-bold">{unit}</span>
+        </p>
+        <p className="text-xs font-semibold text-ink/70">{note}</p>
+      </div>
+      <Link href={href} className="btn bg-brand text-white w-full sm:w-auto">
+        {icon}
+        {cta}
+        <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+      </Link>
     </div>
   );
 }

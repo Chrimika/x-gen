@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CreditCard, ArrowRight, RefreshCw } from "lucide-react";
+import Header from "@/components/header";
 import { useAuth } from "@/lib/auth-context";
 import { useMember, usePlan } from "@/lib/hooks";
 import {
@@ -16,24 +18,22 @@ import type { Plan } from "@/lib/types";
 
 function getStatusBadge(status: string, daysRemaining: number) {
   if (status === "expired" || daysRemaining <= 0) {
-    return {
-      label: "Expiré",
-      bgClass: "bg-red-50 text-red-700 border-red-200",
-      dotClass: "bg-red-500",
-    };
+    return { label: "Expiré", chipClass: "bg-red-200", dotClass: "bg-red-500" };
   }
   if (daysRemaining <= 5) {
-    return {
-      label: "Expire bientôt",
-      bgClass: "bg-orange-50 text-orange-700 border-orange-200",
-      dotClass: "bg-orange-500",
-    };
+    return { label: "Expire bientôt", chipClass: "bg-sun", dotClass: "bg-brand" };
   }
-  return {
-    label: "Actif",
-    bgClass: "bg-green-50 text-green-700 border-green-200",
-    dotClass: "bg-green-500",
-  };
+  return { label: "Actif", chipClass: "bg-green-200", dotClass: "bg-green-600" };
+}
+
+const PAYMENT_TYPES: Record<string, { label: string; chipClass: string }> = {
+  join: { label: "Adhésion", chipClass: "bg-peach" },
+  renewal: { label: "Renouvellement", chipClass: "bg-sun" },
+  new_plan: { label: "Nouveau plan", chipClass: "bg-white" },
+};
+
+function paymentType(type: string) {
+  return PAYMENT_TYPES[type] ?? PAYMENT_TYPES.new_plan;
 }
 
 function TimelineDots({ plan }: { plan: Plan }) {
@@ -43,15 +43,15 @@ function TimelineDots({ plan }: { plan: Plan }) {
   const scale = totalDays / maxDots;
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {Array.from({ length: maxDots }, (_, i) => {
         const dayIndex = Math.round(i * scale);
         const isElapsed = dayIndex < elapsed;
         return (
           <div
             key={i}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              isElapsed ? "bg-[#E8622C]" : "bg-gray-200"
+            className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 border-ink ${
+              isElapsed ? "bg-brand" : "bg-white"
             }`}
             title={`Jour ${dayIndex + 1}`}
           />
@@ -62,7 +62,7 @@ function TimelineDots({ plan }: { plan: Plan }) {
 }
 
 export default function DashboardPage() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { member, loading: memberLoading } = useMember(user?.uid);
   const { plan, loading: planLoading } = usePlan(member?.planId || "");
@@ -75,10 +75,10 @@ export default function DashboardPage() {
 
   if (authLoading || memberLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-screen bg-[#f5f5f5]">
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-cream">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-[#E8622C] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[#666]">Chargement...</p>
+          <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-muted">Chargement...</p>
         </div>
       </div>
     );
@@ -95,139 +95,95 @@ export default function DashboardPage() {
   const showRenewal = hasSub && daysRemaining <= 2;
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 48 48"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="8" y="4" width="32" height="24" rx="4" fill="#E8622C" />
-              <rect x="14" y="12" width="6" height="6" rx="1" fill="white" />
-              <rect x="28" y="12" width="6" height="6" rx="1" fill="white" />
-              <rect x="17" y="14" width="2" height="2" fill="#1a1a1a" />
-              <rect x="31" y="14" width="2" height="2" fill="#1a1a1a" />
-              <rect x="22" y="0" width="4" height="6" rx="2" fill="#E8622C" />
-              <rect x="18" y="22" width="12" height="2" rx="1" fill="white" />
-              <rect x="14" y="30" width="20" height="12" rx="3" fill="#E8622C" />
-              <rect x="20" y="33" width="8" height="3" rx="1" fill="white" opacity="0.6" />
-              <rect x="6" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-              <rect x="36" y="32" width="6" height="3" rx="1.5" fill="#E8622C" />
-              <rect x="18" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-              <rect x="26" y="42" width="4" height="6" rx="2" fill="#E8622C" />
-            </svg>
-            <span className="text-lg font-bold text-[#1a1a1a]">X-Gen</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            {user.photoURL && (
-              <img
-                src={user.photoURL}
-                alt=""
-                className="w-8 h-8 rounded-full"
-                referrerPolicy="no-referrer"
-              />
-            )}
-            <span className="text-sm text-[#666] hidden sm:inline">
-              {user.displayName || user.email}
-            </span>
-            <button
-              onClick={signOut}
-              className="text-sm text-[#666] hover:text-[#1a1a1a] transition-colors cursor-pointer"
-            >
-              D&eacute;connexion
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-cream">
+      <Header />
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Page Title */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-8 animate-rise">
           {user.photoURL && (
             <img
               src={user.photoURL}
               alt=""
-              className="w-14 h-14 rounded-full ring-2 ring-[#E8622C]/20"
+              className="w-14 h-14 rounded-full border-[2.5px] border-ink shadow-[3px_3px_0_var(--ink)] flex-shrink-0"
               referrerPolicy="no-referrer"
             />
           )}
-          <div>
-            <h1 className="text-2xl font-bold text-[#1a1a1a]">Mon Espace</h1>
-            <p className="text-[#666] text-sm">{user.displayName || user.email}</p>
+          <div className="min-w-0">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-ink tracking-tight leading-none">
+              Mon Espace
+            </h1>
+            <p className="text-muted text-sm mt-1.5 truncate">
+              {user.displayName || user.email}
+            </p>
           </div>
         </div>
 
         {hasSub && member && badge ? (
           <>
             {/* Subscription Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 mb-6">
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-[#1a1a1a]">{member.planName}</h2>
-                  <p className="text-sm text-[#666] mt-1">Votre abonnement actuel</p>
+            <div className="brut-card p-5 sm:p-8 mb-6 animate-rise">
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted mb-1">
+                    Votre abonnement actuel
+                  </p>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold text-ink tracking-tight leading-tight break-words">
+                    {member.planName}
+                  </h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${badge.bgClass}`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${badge.dotClass}`} />
-                    {badge.label}
-                  </span>
-                </div>
+                <span className={`chip ${badge.chipClass}`}>
+                  <span className={`w-2 h-2 rounded-full ${badge.dotClass}`} />
+                  {badge.label}
+                </span>
               </div>
 
               {/* Timeline Visualization */}
               {plan && !planLoading && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-[#666]">Progression du cycle</span>
-                    <span className="text-xs font-semibold text-[#E8622C]">{countdown}</span>
+                <div className="mb-6 p-4 rounded-2xl border-2 border-ink bg-white">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                      Progression du cycle
+                    </span>
+                    <span className="chip bg-brand text-white">{countdown}</span>
                   </div>
                   <TimelineDots plan={plan} />
                 </div>
               )}
 
               {/* Details Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-[#f5f5f5] rounded-xl p-4">
-                  <p className="text-xs text-[#666] mb-1">Date de d&eacute;but</p>
-                  <p className="text-sm font-medium text-[#1a1a1a]">
-                    {formatDate(member.joinDate)}
-                  </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="rounded-2xl border-2 border-ink bg-peach p-4">
+                  <p className="text-xs font-semibold text-muted mb-1">Date de d&eacute;but</p>
+                  <p className="text-base font-bold text-ink">{formatDate(member.joinDate)}</p>
                 </div>
-                <div className="bg-[#f5f5f5] rounded-xl p-4">
-                  <p className="text-xs text-[#666] mb-1">Date d&apos;&eacute;ch&eacute;ance</p>
-                  <p className="text-sm font-medium text-[#1a1a1a]">
-                    {formatDate(member.expiryDate)}
+                <div className="rounded-2xl border-2 border-ink bg-peach p-4">
+                  <p className="text-xs font-semibold text-muted mb-1">
+                    Date d&apos;&eacute;ch&eacute;ance
                   </p>
+                  <p className="text-base font-bold text-ink">{formatDate(member.expiryDate)}</p>
                 </div>
-                <div className="bg-[#f5f5f5] rounded-xl p-4">
-                  <p className="text-xs text-[#666] mb-1">Email ajout&eacute; au plan</p>
-                  <p className="text-sm font-medium text-[#1a1a1a] truncate">
-                    {member.emailToAdd}
-                  </p>
+                <div className="rounded-2xl border-2 border-ink bg-white p-4 min-w-0">
+                  <p className="text-xs font-semibold text-muted mb-1">Email ajout&eacute; au plan</p>
+                  <p className="text-base font-bold text-ink truncate">{member.emailToAdd}</p>
                 </div>
               </div>
 
-              {/* Renewal Button */}
+              {/* Renewal */}
               {showRenewal && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                    <p className="text-sm text-orange-600 font-medium">
-                      Votre abonnement expire bient&ocirc;t
-                    </p>
+                <div className="mt-6 bg-sun rounded-3xl brut p-5 sm:p-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-brand border-2 border-ink animate-pulse-dot" />
+                    <p className="text-sm font-bold text-ink">Votre abonnement expire bient&ocirc;t</p>
                   </div>
+                  <p className="text-sm text-ink/80 mb-4">
+                    Renouvelez maintenant pour garder votre acc&egrave;s au prochain cycle.
+                  </p>
                   <Link
                     href={`/checkout/${member.planId}?type=renewal`}
-                    className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
+                    className="btn bg-brand text-white w-full sm:w-auto"
                   >
+                    <RefreshCw className="w-4 h-4" />
                     Renouveler mon abonnement
                   </Link>
                 </div>
@@ -235,94 +191,92 @@ export default function DashboardPage() {
             </div>
 
             {/* Payment History */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-              <h2 className="text-lg font-semibold text-[#1a1a1a] mb-4">
+            <div className="brut-card p-5 sm:p-8 animate-rise">
+              <h2 className="text-2xl font-extrabold text-ink tracking-tight mb-5">
                 Historique des paiements
               </h2>
               {member.payments && member.payments.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[#666] border-b border-gray-100">
-                        <th className="pb-2 font-medium">Date</th>
-                        <th className="pb-2 font-medium">Montant</th>
-                        <th className="pb-2 font-medium">Type</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {member.payments.map((p, i) => (
-                        <tr key={i}>
-                          <td className="py-2 text-[#1a1a1a]">{formatDate(p.date)}</td>
-                          <td className="py-2 text-[#1a1a1a] font-medium">
-                            {p.amount.toLocaleString("fr-FR")} FCFA
-                          </td>
-                          <td className="py-2">
-                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                              p.type === "join" ? "bg-blue-100 text-blue-800" :
-                              p.type === "renewal" ? "bg-purple-100 text-purple-800" :
-                              "bg-orange-100 text-orange-800"
-                            }`}>
-                              {p.type === "join" ? "Adhésion" :
-                               p.type === "renewal" ? "Renouvellement" : "Nouveau plan"}
-                            </span>
-                          </td>
+                <>
+                  {/* Mobile: stacked cards */}
+                  <div className="sm:hidden space-y-3">
+                    {member.payments.map((p, i) => {
+                      const t = paymentType(p.type);
+                      return (
+                        <div
+                          key={i}
+                          className="rounded-2xl border-2 border-ink bg-white p-4 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-lg font-extrabold text-ink">
+                              {p.amount.toLocaleString("fr-FR")} FCFA
+                            </p>
+                            <p className="text-xs text-muted mt-0.5">{formatDate(p.date)}</p>
+                          </div>
+                          <span className={`chip ${t.chipClass}`}>{t.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop: table */}
+                  <div className="hidden sm:block overflow-x-auto rounded-2xl border-2 border-ink">
+                    <table className="w-full text-sm">
+                      <thead className="bg-peach">
+                        <tr className="text-left text-ink border-b-2 border-ink">
+                          <th className="px-4 py-3 font-bold">Date</th>
+                          <th className="px-4 py-3 font-bold">Montant</th>
+                          <th className="px-4 py-3 font-bold">Type</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="bg-white divide-y-2 divide-ink/10">
+                        {member.payments.map((p, i) => {
+                          const t = paymentType(p.type);
+                          return (
+                            <tr key={i}>
+                              <td className="px-4 py-3 text-ink">{formatDate(p.date)}</td>
+                              <td className="px-4 py-3 text-ink font-bold">
+                                {p.amount.toLocaleString("fr-FR")} FCFA
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`chip ${t.chipClass}`}>{t.label}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#999"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-                      <line x1="1" y1="10" x2="23" y2="10" />
-                    </svg>
+                  <div className="w-14 h-14 bg-peach border-2 border-ink rounded-full flex items-center justify-center mx-auto mb-3">
+                    <CreditCard className="w-6 h-6 text-ink" />
                   </div>
-                  <p className="text-sm text-[#666]">
-                    Aucun paiement enregistr&eacute; pour le moment.
-                  </p>
+                  <p className="text-sm text-muted">Aucun paiement enregistr&eacute; pour le moment.</p>
                 </div>
               )}
             </div>
           </>
         ) : (
           /* No Subscription */
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-            <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <rect x="8" y="4" width="32" height="24" rx="4" fill="#E8622C" opacity="0.3" />
-                <rect x="14" y="12" width="6" height="6" rx="1" fill="#E8622C" opacity="0.5" />
-                <rect x="28" y="12" width="6" height="6" rx="1" fill="#E8622C" opacity="0.5" />
-                <rect x="14" y="30" width="20" height="12" rx="3" fill="#E8622C" opacity="0.3" />
+          <div className="brut-card p-6 sm:p-10 text-center animate-rise">
+            <div className="w-16 h-16 bg-sun border-[2.5px] border-ink rounded-full flex items-center justify-center mx-auto mb-5 shadow-[3px_3px_0_var(--ink)]">
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="4" width="32" height="24" rx="4" fill="#E8622C" />
+                <rect x="14" y="12" width="6" height="6" rx="1" fill="white" />
+                <rect x="28" y="12" width="6" height="6" rx="1" fill="white" />
+                <rect x="14" y="30" width="20" height="12" rx="3" fill="#E8622C" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-[#1a1a1a] mb-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight mb-2">
               Aucun abonnement actif
             </h2>
-            <p className="text-sm text-[#666] mb-6">
+            <p className="text-sm text-muted mb-6 max-w-sm mx-auto">
               Parcourez nos plans pour rejoindre une &eacute;quipe Claude AI.
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center px-6 py-3 bg-[#E8622C] text-white font-medium rounded-xl hover:bg-[#d4561f] transition-colors text-sm"
-            >
+            <Link href="/#plans" className="btn bg-brand text-white w-full sm:w-auto">
               Voir les plans disponibles
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         )}

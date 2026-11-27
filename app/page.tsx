@@ -2,297 +2,246 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Sparkles, Users, ArrowRight, Shield, Zap, MessageCircle, Clock, UserPlus } from "lucide-react";
-import Header from "@/components/header";
+import { ArrowRight, Shield, Zap, Users, UserPlus, MessageCircle, Sparkle } from "lucide-react";
+import Header, { BrandMark } from "@/components/header";
 import PlanCard from "@/components/plan-card";
 import CommunityStats from "@/components/community-stats";
 import { usePlans, useWaitingList } from "@/lib/hooks";
 import { formatPrice, DEFAULT_PRICING } from "@/lib/pricing";
 
+const MARQUEE_WORDS = ["Claude Code", "Team Plan", "Mobile Money", "Communauté", "Prix ajusté", "Carte bancaire"];
+
+function SpinningBadge() {
+  return (
+    <div className="absolute -top-5 -right-3 sm:top-6 sm:right-6 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-sun border-[2.5px] border-ink shadow-[3px_3px_0_var(--ink)] grid place-items-center">
+      <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full animate-spin-slow" aria-hidden>
+        <defs>
+          <path id="badge-circle" d="M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0" />
+        </defs>
+        <text className="fill-ink" style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 2 }}>
+          <textPath href="#badge-circle">MOBILE MONEY • CARTE • NOTCHPAY •</textPath>
+        </text>
+      </svg>
+      <span className="text-xl sm:text-3xl font-extrabold leading-none">21k</span>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { plans, loading } = usePlans();
   const { entries: waitingList } = useWaitingList();
 
-  const activePlans = useMemo(
-    () => plans.filter((p) => p.status === "active"),
-    [plans],
-  );
-
+  const activePlans = useMemo(() => plans.filter((p) => p.status === "active"), [plans]);
   const totalGroupSeats = useMemo(
     () => activePlans.reduce((sum, p) => sum + p.totalSeats, 0),
     [activePlans],
   );
+  const fullPrice = formatPrice(DEFAULT_PRICING.fullPriceFCFA);
+  const waitingMissing = Math.max(0, 2 - waitingList.length);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="min-h-screen bg-cream overflow-x-hidden">
       <Header />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-white via-[#FFF7F3] to-[#FFF0E8]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8622C]/10 text-[#E8622C] text-sm font-medium mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              Communaut&eacute; active &mdash; {activePlans.length} plans en cours
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pb-10 space-y-8 sm:space-y-12">
+        {/* Hero */}
+        <section className="relative mt-4 sm:mt-6 rounded-[32px] bg-brand text-white border-[2.5px] border-ink shadow-[6px_6px_0_var(--ink)] px-5 pt-8 pb-7 sm:px-12 sm:py-16 animate-rise">
+          <SpinningBadge />
+          <div className="flex flex-wrap gap-2 mb-6 pr-20 sm:pr-0">
+            <span className="chip bg-white text-ink">Acc&egrave;s partag&eacute;</span>
+            <span className="chip bg-sun text-ink">
+              {loading ? "…" : `${activePlans.length} plans en cours`}
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#1a1a1a] leading-tight tracking-tight">
-              Claude Code Team
-              <br />
-              <span className="text-[#E8622C]">Acc&egrave;s Simplifi&eacute;</span>
-            </h1>
-            <p className="mt-6 text-lg sm:text-xl text-[#666] leading-relaxed max-w-2xl mx-auto">
-              Rejoignez une communaut&eacute; de d&eacute;veloppeurs qui partagent l&apos;acc&egrave;s &agrave;
-              Claude Code Team. Plans mensuels &agrave; partir de{" "}
-              <span className="font-semibold text-[#1a1a1a]">21 000 FCFA/mois</span>,
-              avec un tarif ajust&eacute; si vous rejoignez en cours de cycle.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <a
-                href="#plans"
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Voir les plans disponibles
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <a
-                href="#create"
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-[#1a1a1a] font-semibold rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                Cr&eacute;er un plan
-              </a>
-            </div>
           </div>
-        </div>
-        {/* Decorative gradient blob */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#E8622C]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-[#E8622C]/5 rounded-full blur-3xl pointer-events-none" />
-      </section>
 
-      {/* Value propositions */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-10 mb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-start gap-3">
-            <div className="p-2 bg-[#22c55e]/10 rounded-lg flex-shrink-0">
-              <Shield className="w-5 h-5 text-[#22c55e]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[#1a1a1a] text-sm">S&eacute;curis&eacute; et fiable</h3>
-              <p className="text-xs text-[#666] mt-1">
-                Paiements via NotchPay, comptes v&eacute;rifi&eacute;s, gestion transparente.
-              </p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-start gap-3">
-            <div className="p-2 bg-[#3b82f6]/10 rounded-lg flex-shrink-0">
-              <Zap className="w-5 h-5 text-[#3b82f6]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[#1a1a1a] text-sm">Prix ajust&eacute; en temps r&eacute;el</h3>
-              <p className="text-xs text-[#666] mt-1">
-                Le prix baisse au fur et &agrave; mesure du cycle. Payez uniquement les jours restants.
-              </p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 flex items-start gap-3">
-            <div className="p-2 bg-[#E8622C]/10 rounded-lg flex-shrink-0">
-              <Users className="w-5 h-5 text-[#E8622C]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[#1a1a1a] text-sm">Communaut&eacute; active</h3>
-              <p className="text-xs text-[#666] mt-1">
-                Plus de 270 membres sur WhatsApp. Entraide, partage et &eacute;volution ensemble.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+          <h1 className="text-[2.6rem] leading-[1.02] sm:text-7xl font-extrabold tracking-tight max-w-3xl">
+            Ton acc&egrave;s{" "}
+            <span className="inline-block bg-sun text-ink px-2.5 sm:px-4 -rotate-2 rounded-xl border-[2.5px] border-ink shadow-[3px_3px_0_var(--ink)] my-1">
+              Claude Code
+            </span>{" "}
+            Team, simplifi&eacute;.
+          </h1>
 
-      {/* Community stats */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 mb-12">
+          <p className="mt-6 text-base sm:text-xl text-white/90 max-w-xl leading-relaxed">
+            Rejoins un plan partag&eacute;, paie en Mobile Money ou par carte, et code avec Claude
+            d&egrave;s aujourd&apos;hui. &Agrave; partir de{" "}
+            <span className="font-extrabold text-white">{fullPrice} FCFA/mois</span>, moins si tu
+            arrives en cours de cycle.
+          </p>
+
+          <div className="mt-8 grid sm:flex gap-3">
+            <a href="#plans" className="btn bg-sun text-ink text-lg">
+              Voir les plans <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+            </a>
+            <a href="#create" className="btn bg-transparent text-white !border-white !shadow-none hover:!shadow-none hover:bg-white/10 text-lg">
+              Cr&eacute;er un plan
+            </a>
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="grid gap-4 sm:grid-cols-3">
+          {[
+            { n: "1", tone: "bg-sun", title: "Choisis", text: "Un plan actif avec des places libres, ou lance-en un nouveau.", icon: <Users className="w-5 h-5" /> },
+            { n: "2", tone: "bg-brand text-white", title: "Paie", text: "Mobile Money ou carte via NotchPay. Prix ajusté aux jours restants.", icon: <Zap className="w-5 h-5" /> },
+            { n: "3", tone: "bg-[#7ee0a1]", title: "Code", text: "Ton email est ajouté au plan Claude AI Team. C'est parti.", icon: <Shield className="w-5 h-5" /> },
+          ].map((s) => (
+            <div key={s.n} className="brut-card pop p-5 sm:p-6 flex sm:block items-start gap-4">
+              <span className={`shrink-0 grid place-items-center w-12 h-12 rounded-full border-[2.5px] border-ink text-lg font-extrabold ${s.tone}`}>
+                {s.n}
+              </span>
+              <div>
+                <h3 className="sm:mt-5 text-2xl sm:text-3xl font-extrabold tracking-tight">{s.title}</h3>
+                <p className="mt-1 sm:mt-1.5 text-sm sm:text-base text-muted leading-relaxed">{s.text}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
         <CommunityStats plans={activePlans} />
-      </section>
 
-      {/* Plans */}
-      <section id="plans" className="max-w-6xl mx-auto px-4 sm:px-6 mb-16 scroll-mt-20">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-[#1a1a1a]">
-            Plans actifs
-          </h2>
-          <span className="text-sm text-[#666]">
-            {activePlans.length} plan{activePlans.length > 1 ? "s" : ""} disponible
-            {activePlans.length > 1 ? "s" : ""}
-          </span>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {activePlans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              totalGroupSeats={totalGroupSeats}
-            />
+        {/* Plans */}
+        <section id="plans" className="scroll-mt-24">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <h2 className="text-4xl sm:text-5xl font-extrabold tracking-tight">Plans actifs</h2>
+            <span className="chip bg-white">
+              {activePlans.length} disponible{activePlans.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {loading
+              ? [0, 1].map((i) => <div key={i} className="brut-card h-96 animate-pulse" />)
+              : activePlans.map((plan) => (
+                  <PlanCard key={plan.id} plan={plan} totalGroupSeats={totalGroupSeats} />
+                ))}
+          </div>
+        </section>
+      </main>
+
+      {/* Marquee */}
+      <div className="bg-ink text-white border-y-[2.5px] border-ink py-3 overflow-hidden -rotate-1 my-4" aria-hidden>
+        <div className="flex w-max animate-marquee">
+          {[0, 1].map((k) => (
+            <div key={k} className="flex items-center">
+              {MARQUEE_WORDS.map((w) => (
+                <span key={w} className="flex items-center text-2xl sm:text-3xl font-extrabold px-4 whitespace-nowrap">
+                  {w}
+                  <Sparkle className="w-6 h-6 ml-8 text-sun" fill="currentColor" />
+                </span>
+              ))}
+            </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* Create a plan */}
-      <section
-        id="create"
-        className="max-w-6xl mx-auto px-4 sm:px-6 mb-16 scroll-mt-20"
-      >
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 sm:p-8">
-            <h2 className="text-2xl font-bold text-[#1a1a1a] mb-3">
-              Cr&eacute;er un nouveau plan
-            </h2>
-            <p className="text-[#666] leading-relaxed mb-6 max-w-2xl">
-              Aucun plan actif ne vous convient ? Payez maintenant et rejoignez la
-              liste d&apos;attente. D&egrave;s qu&apos;au moins{" "}
-              <span className="font-semibold text-[#1a1a1a]">2 personnes</span>{" "}
-              ont pay&eacute;, le plan est cr&eacute;&eacute; et tout le monde
-              b&eacute;n&eacute;ficie de l&apos;acc&egrave;s.
-              Prix :{" "}
-              <span className="font-semibold text-[#1a1a1a]">
-                {formatPrice(DEFAULT_PRICING.fullPriceFCFA)} FCFA/mois
-              </span>.
-            </p>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-8 sm:space-y-12">
+        {/* Create a plan */}
+        <section id="create" className="scroll-mt-24 relative rounded-[32px] bg-sun border-[2.5px] border-ink shadow-[6px_6px_0_var(--ink)] p-6 sm:p-10 overflow-hidden">
+          <span className="chip bg-ink text-white">Liste d&apos;attente</span>
+          <h2 className="mt-4 text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.02] max-w-2xl">
+            Aucun plan ne te va&nbsp;? Lance le tien.
+          </h2>
+          <p className="mt-4 text-base sm:text-lg max-w-xl leading-relaxed">
+            Paie maintenant et rejoins la liste d&apos;attente. D&egrave;s que{" "}
+            <span className="font-extrabold">2 personnes</span> ont pay&eacute;, le plan est cr&eacute;&eacute;
+            et tout le monde a acc&egrave;s. Prix&nbsp;: <span className="font-extrabold">{fullPrice} FCFA/mois</span>.
+          </p>
 
-            {/* Waiting list status */}
-            {waitingList.length > 0 && (
-              <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-100">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(waitingList.length, 5) }, (_, i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-[#E8622C]/10 flex items-center justify-center"
-                      >
-                        <Users className="w-4 h-4 text-[#E8622C]" />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-900">
-                      {waitingList.length} personne{waitingList.length > 1 ? "s" : ""} en attente
-                    </p>
-                    <p className="text-xs text-blue-700">
-                      {waitingList.length >= 2
-                        ? "Le minimum est atteint ! Le plan sera créé sous peu."
-                        : `Encore ${2 - waitingList.length} personne${2 - waitingList.length > 1 ? "s" : ""} pour démarrer le plan.`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <p className="text-3xl font-bold text-[#E8622C]">1.</p>
-                <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  Payez en ligne
-                </p>
-                <p className="text-xs text-[#666] mt-1">
-                  {formatPrice(DEFAULT_PRICING.fullPriceFCFA)} FCFA pour un mois complet d&apos;acc&egrave;s.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <p className="text-3xl font-bold text-[#E8622C]">2.</p>
-                <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  Patientez
-                </p>
-                <p className="text-xs text-[#666] mt-1">
-                  Le plan d&eacute;marre quand au moins 2 membres ont pay&eacute;.
-                </p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                <p className="text-3xl font-bold text-[#E8622C]">3.</p>
-                <p className="text-sm text-[#1a1a1a] font-medium mt-1">
-                  Acc&egrave;s activ&eacute;
-                </p>
-                <p className="text-xs text-[#666] mt-1">
-                  Votre email est ajout&eacute; au plan Claude AI Team.
-                </p>
-              </div>
+          <div className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-white border-2 border-ink px-4 py-3 shadow-[3px_3px_0_var(--ink)]">
+            <div className="flex -space-x-2">
+              {Array.from({ length: Math.max(2, Math.min(waitingList.length, 5)) }, (_, i) => (
+                <span
+                  key={i}
+                  className={`w-8 h-8 rounded-full border-2 border-ink grid place-items-center ${
+                    i < waitingList.length ? "bg-brand text-white" : "bg-white text-ink/30 border-dashed"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                </span>
+              ))}
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/checkout/new-plan"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#E8622C] text-white font-semibold rounded-xl hover:bg-[#d4561f] active:scale-[0.97] transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                <UserPlus className="w-4 h-4" />
-                Payer et rejoindre la liste d&apos;attente
-              </Link>
-              <a
-                href="https://wa.me/237672094167"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#1a1a1a] font-semibold rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Question ? WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-bold text-[#1a1a1a]">X-Gen</span>
-              </div>
-              <p className="text-sm text-[#666] leading-relaxed">
-                Acc&egrave;s partag&eacute; &agrave; Claude Code Team pour les d&eacute;veloppeurs
-                francophones. Simplifi&eacute;, s&eacute;curis&eacute;, abordable.
+            <div className="leading-tight">
+              <p className="font-extrabold">
+                {waitingList.length} en attente
+              </p>
+              <p className="text-xs font-semibold text-muted">
+                {waitingMissing === 0
+                  ? "Minimum atteint, plan créé sous peu !"
+                  : `Encore ${waitingMissing} pour démarrer`}
               </p>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-[#1a1a1a] mb-3">
-                Navigation
-              </h4>
-              <ul className="space-y-2 text-sm text-[#666]">
-                <li>
-                  <a href="/" className="hover:text-[#E8622C] transition-colors">
-                    Accueil
-                  </a>
-                </li>
-                <li>
-                  <a href="#plans" className="hover:text-[#E8622C] transition-colors">
-                    Plans
-                  </a>
-                </li>
-                <li>
-                  <a href="#create" className="hover:text-[#E8622C] transition-colors">
-                    Cr&eacute;er un plan
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-[#1a1a1a] mb-3">
-                Contact
-              </h4>
-              <ul className="space-y-2 text-sm text-[#666]">
-                <li>WhatsApp: +237 672 094 167</li>
-                <li>Email: contact@mikamba.cm</li>
-                <li>
-                  <a
-                    href="https://chat.whatsapp.com/JcN64bbs3bYAfdi9EcqoMf"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[#E8622C] transition-colors"
-                  >
-                    Rejoindre le groupe WhatsApp
-                  </a>
-                </li>
-              </ul>
-            </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-[#999]">
-            &copy; 2026 X-Gen. Tous droits r&eacute;serv&eacute;s.
+
+          <div className="mt-8 grid sm:flex gap-3">
+            <Link href="/checkout/new-plan" className="btn bg-brand text-white text-lg">
+              <UserPlus className="w-5 h-5" strokeWidth={2.5} />
+              Payer et rejoindre
+            </Link>
+            <a
+              href="https://wa.me/237672094167"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn bg-white text-ink text-lg"
+            >
+              <MessageCircle className="w-5 h-5" strokeWidth={2.5} />
+              Une question&nbsp;?
+            </a>
           </div>
+
+          <div className="absolute -bottom-6 -right-6 hidden sm:grid place-items-center w-44 h-44 rounded-[32px] bg-brand border-[2.5px] border-ink rotate-6">
+            <span className="text-6xl font-extrabold text-white -rotate-6">2+</span>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="rounded-[32px] bg-ink text-white border-[2.5px] border-ink shadow-[6px_6px_0_var(--brand)] p-6 sm:p-10">
+          <h2 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.02]">
+            Pr&ecirc;t &agrave; coder<br />
+            avec <span className="text-brand">Claude</span>&nbsp;?
+          </h2>
+          <a href="#plans" className="btn bg-sun text-ink text-lg mt-8 w-full sm:w-auto !border-white">
+            Choisir mon plan <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+          </a>
+        </section>
+      </div>
+
+      <footer className="border-t-[2.5px] border-ink bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 grid gap-8 sm:grid-cols-3">
+          <div>
+            <BrandMark size="sm" />
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              Acc&egrave;s partag&eacute; &agrave; Claude Code Team pour les d&eacute;veloppeurs francophones.
+              Simple, s&eacute;curis&eacute;, abordable.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-extrabold mb-3">Navigation</h4>
+            <ul className="space-y-2 text-sm font-semibold text-muted">
+              <li><a href="#plans" className="hover:text-brand">Plans</a></li>
+              <li><a href="#create" className="hover:text-brand">Cr&eacute;er un plan</a></li>
+              <li><Link href="/dashboard" className="hover:text-brand">Mon espace</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-extrabold mb-3">Contact</h4>
+            <ul className="space-y-2 text-sm font-semibold text-muted">
+              <li>WhatsApp&nbsp;: +237 672 094 167</li>
+              <li>Email&nbsp;: contact@mikamba.cm</li>
+              <li>
+                <a
+                  href="https://chat.whatsapp.com/JcN64bbs3bYAfdi9EcqoMf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand"
+                >
+                  Rejoindre le groupe WhatsApp &rarr;
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t-2 border-ink/10 py-5 text-center text-xs font-semibold text-muted">
+          &copy; 2026 X-Gen. Tous droits r&eacute;serv&eacute;s.
         </div>
       </footer>
     </div>
