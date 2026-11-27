@@ -1,19 +1,29 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import {
+  LayoutGrid,
+  Layers,
+  Users,
+  CreditCard,
+  Settings,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Lock,
+  Check,
+} from "lucide-react";
+import Header from "@/components/header";
 import { useAuth } from "@/lib/auth-context";
 import { usePlans, useAllMembers, useAllPayments, usePricing } from "@/lib/hooks";
-import { DEFAULT_PRICING } from "@/lib/pricing";
+import { DEFAULT_PRICING, formatPrice } from "@/lib/pricing";
 import type { Plan, Member, Payment, PricingConfig } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers & shared UI
 // ---------------------------------------------------------------------------
-
-function formatPrice(amount: number): string {
-  return amount.toLocaleString("fr-FR");
-}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return "-";
@@ -24,23 +34,30 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    expired: "bg-gray-100 text-gray-600",
-    upcoming: "bg-blue-100 text-blue-800",
-    pending: "bg-yellow-100 text-yellow-800",
-    complete: "bg-green-100 text-green-800",
-    failed: "bg-red-100 text-red-800",
-    cancelled: "bg-gray-100 text-gray-600",
-  };
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${map[status] || "bg-gray-100 text-gray-600"}`}
-    >
-      {status}
-    </span>
-  );
+const STATUS: Record<string, { label: string; tone: string }> = {
+  active: { label: "Actif", tone: "bg-[#bdf2cf]" },
+  expired: { label: "Expiré", tone: "bg-ink/10" },
+  upcoming: { label: "À venir", tone: "bg-[#c7dcff]" },
+  pending: { label: "En attente", tone: "bg-sun" },
+  complete: { label: "Payé", tone: "bg-[#bdf2cf]" },
+  failed: { label: "Échoué", tone: "bg-[#ffb4ae]" },
+  cancelled: { label: "Annulé", tone: "bg-ink/10" },
+};
+
+function StatusChip({ status }: { status: string }) {
+  const s = STATUS[status] ?? { label: status, tone: "bg-white" };
+  return <span className={`chip ${s.tone}`}>{s.label}</span>;
+}
+
+const PAYMENT_TYPE: Record<string, { label: string; tone: string }> = {
+  join: { label: "Adhésion", tone: "bg-[#c7dcff]" },
+  renewal: { label: "Renouvellement", tone: "bg-[#e3d1ff]" },
+  new_plan: { label: "Nouveau plan", tone: "bg-peach" },
+};
+
+function TypeChip({ type }: { type: string }) {
+  const t = PAYMENT_TYPE[type] ?? PAYMENT_TYPE.new_plan;
+  return <span className={`chip ${t.tone}`}>{t.label}</span>;
 }
 
 type TabId = "overview" | "plans" | "members" | "payments" | "config";
@@ -53,26 +70,114 @@ function useAdminToken() {
   }, [user]);
 }
 
-// ---------------------------------------------------------------------------
-// Stat Card
-// ---------------------------------------------------------------------------
-
 function StatCard({
   label,
   value,
   sub,
-  color,
+  tone = "bg-white",
 }: {
   label: string;
   value: string | number;
   sub?: string;
-  color?: string;
+  tone?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${color || "text-gray-900"}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className={`${tone} rounded-3xl border-[2.5px] border-ink p-4 sm:p-5 shadow-[4px_4px_0_var(--ink)]`}>
+      <p className="text-xs sm:text-sm font-bold uppercase tracking-wide text-ink/70">{label}</p>
+      <p className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight break-words">{value}</p>
+      {sub && <p className="text-xs font-semibold text-ink/60 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{children}</h2>
+      {action}
+    </div>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-sm font-bold mb-1.5">{label}</span>
+      {children}
+      {hint && <span className="block text-xs font-semibold text-muted mt-1.5">{hint}</span>}
+    </label>
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  footer: ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 backdrop-blur-sm p-4">
+      <div className="brut-card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 sm:p-6 animate-rise">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <h3 className="text-2xl font-extrabold tracking-tight">{title}</h3>
+          <button
+            onClick={onClose}
+            aria-label="Fermer"
+            className="btn !p-0 w-10 h-10 bg-white !shadow-[2px_2px_0_var(--ink)] shrink-0"
+          >
+            <X className="w-4 h-4" strokeWidth={2.5} />
+          </button>
+        </div>
+        {children}
+        <div className="grid grid-cols-2 gap-3 mt-6">{footer}</div>
+      </div>
+    </div>
+  );
+}
+
+function ErrorBox({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <p className="mb-4 rounded-2xl border-2 border-ink bg-red-100 px-4 py-3 text-sm font-semibold text-red-700">
+      {message}
+    </p>
+  );
+}
+
+function Table({ head, children }: { head: string[]; children: ReactNode }) {
+  return (
+    <div className="hidden md:block brut-card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-peach text-left border-b-[2.5px] border-ink">
+              {head.map((h) => (
+                <th key={h} className="px-5 py-3.5 font-extrabold uppercase text-xs tracking-wide whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y-2 divide-ink/10">{children}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MobileCard({ children }: { children: ReactNode }) {
+  return <div className="rounded-3xl border-[2.5px] border-ink bg-white p-4 shadow-[4px_4px_0_var(--ink)]">{children}</div>;
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-3xl border-2 border-dashed border-ink/40 p-8 text-center font-bold text-muted">
+      {text}
     </div>
   );
 }
@@ -99,41 +204,40 @@ function PinModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-sm mx-4">
-        <h3 className="text-lg font-semibold mb-3">Verification PIN</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Entrez le PIN administrateur pour confirmer cette action.
-        </p>
-        <input
-          type="password"
-          maxLength={6}
-          className="w-full border border-gray-300 rounded-lg px-4 py-2 text-center text-xl tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-          placeholder="------"
-          value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && pin.length === 6) onConfirm(pin);
-          }}
-          autoFocus
-        />
-        <div className="flex gap-3 mt-5">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-          >
+    <Modal
+      title="Vérification PIN"
+      onClose={onCancel}
+      footer={
+        <>
+          <button onClick={onCancel} className="btn bg-white">
             Annuler
           </button>
-          <button
-            onClick={() => onConfirm(pin)}
-            disabled={pin.length !== 6}
-            className="flex-1 px-4 py-2 rounded-lg bg-[#E8622C] text-white hover:bg-[#d4561f] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          >
+          <button onClick={() => onConfirm(pin)} disabled={pin.length !== 6} className="btn bg-brand text-white">
             Confirmer
           </button>
-        </div>
+        </>
+      }
+    >
+      <div className="flex items-center gap-3 mb-4">
+        <span className="grid place-items-center w-11 h-11 rounded-2xl bg-sun border-2 border-ink shrink-0">
+          <Lock className="w-5 h-5" strokeWidth={2.5} />
+        </span>
+        <p className="text-sm text-muted">Entrez le PIN administrateur pour confirmer cette action.</p>
       </div>
-    </div>
+      <input
+        type="password"
+        inputMode="numeric"
+        maxLength={6}
+        className="field text-center !text-2xl tracking-[0.5em] font-extrabold"
+        placeholder="••••••"
+        value={pin}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && pin.length === 6) onConfirm(pin);
+        }}
+        autoFocus
+      />
+    </Modal>
   );
 }
 
@@ -158,102 +262,91 @@ function OverviewTab({
   const activePlan = plans.find((p) => p.status === "active");
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
-          label="Places totales"
+          label="Places"
           value={`${occupiedSeats}/${totalSeats}`}
-          sub={activePlan ? `Plan actif: ${activePlan.name}` : "Aucun plan actif"}
-          color="text-[#E8622C]"
+          sub={activePlan ? `Actif : ${activePlan.name}` : "Aucun plan actif"}
+          tone="bg-brand text-white [&_p]:!text-white"
         />
         <StatCard
-          label="Revenu total"
-          value={`${formatPrice(totalRevenue)} FCFA`}
-          sub={`${completedPayments.length} paiements`}
-          color="text-green-600"
+          label="Revenu"
+          value={formatPrice(totalRevenue)}
+          sub={`FCFA · ${completedPayments.length} paiements`}
+          tone="bg-[#bdf2cf]"
         />
         <StatCard
-          label="Marge estimee"
-          value={`${formatPrice(activeMembers * 2000)} FCFA`}
-          sub={`~2 000 FCFA/membre actif`}
+          label="Marge estimée"
+          value={formatPrice(activeMembers * 2000)}
+          sub="FCFA · ~2 000 / membre actif"
+          tone="bg-sun"
         />
-        <StatCard
-          label="Membres actifs"
-          value={activeMembers}
-          sub={`${members.length} total`}
-        />
+        <StatCard label="Membres actifs" value={activeMembers} sub={`${members.length} au total`} tone="bg-peach" />
       </div>
 
       {activePlan && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-900 mb-3">Plan actif</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="brut-card p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-gray-500">Nom</p>
-              <p className="font-medium">{activePlan.name}</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-muted">Plan actif</p>
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">{activePlan.name}</h3>
             </div>
-            <div>
-              <p className="text-gray-500">Periode</p>
-              <p className="font-medium">
-                {formatDate(activePlan.startDate)} - {formatDate(activePlan.endDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">Places</p>
-              <p className="font-medium">
-                {activePlan.occupiedSeats}/{activePlan.totalSeats}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-500">Status</p>
-              {statusBadge(activePlan.status)}
-            </div>
+            <StatusChip status={activePlan.status} />
           </div>
-          <div className="mt-4">
-            <div className="w-full bg-gray-100 rounded-full h-2.5">
-              <div
-                className="bg-[#E8622C] h-2.5 rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, (activePlan.occupiedSeats / activePlan.totalSeats) * 100)}%`,
-                }}
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              {activePlan.totalSeats - activePlan.occupiedSeats} places disponibles
-            </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="chip bg-white">
+              {formatDate(activePlan.startDate)} → {formatDate(activePlan.endDate)}
+            </span>
+            <span className="chip bg-peach">
+              {activePlan.occupiedSeats}/{activePlan.totalSeats} places
+            </span>
           </div>
+          <div className="mt-5 h-5 rounded-full border-2 border-ink bg-white overflow-hidden">
+            <div
+              className="h-full bg-brand border-r-2 border-ink transition-[width]"
+              style={{
+                width: `${Math.max(4, Math.min(100, (activePlan.occupiedSeats / activePlan.totalSeats) * 100))}%`,
+              }}
+            />
+          </div>
+          <p className="text-xs font-bold text-muted mt-2">
+            {activePlan.totalSeats - activePlan.occupiedSeats} places disponibles
+          </p>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900">Historique des plans</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-gray-500">
-                <th className="px-5 py-3 font-medium">Nom</th>
-                <th className="px-5 py-3 font-medium">Periode</th>
-                <th className="px-5 py-3 font-medium">Places</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {plans.map((plan) => (
-                <tr key={plan.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-900">{plan.name}</td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {formatDate(plan.startDate)} - {formatDate(plan.endDate)}
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {plan.occupiedSeats}/{plan.totalSeats}
-                  </td>
-                  <td className="px-5 py-3">{statusBadge(plan.status)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="space-y-4">
+        <h3 className="text-2xl font-extrabold tracking-tight">Historique des plans</h3>
+        {plans.length === 0 && <EmptyState text="Aucun plan pour le moment." />}
+        <Table head={["Nom", "Période", "Places", "Statut"]}>
+          {plans.map((plan) => (
+            <tr key={plan.id} className="hover:bg-cream">
+              <td className="px-5 py-3.5 font-extrabold">{plan.name}</td>
+              <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">
+                {formatDate(plan.startDate)} → {formatDate(plan.endDate)}
+              </td>
+              <td className="px-5 py-3.5 font-bold">
+                {plan.occupiedSeats}/{plan.totalSeats}
+              </td>
+              <td className="px-5 py-3.5">
+                <StatusChip status={plan.status} />
+              </td>
+            </tr>
+          ))}
+        </Table>
+        <div className="md:hidden space-y-3">
+          {plans.map((plan) => (
+            <MobileCard key={plan.id}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-lg font-extrabold truncate">{plan.name}</p>
+                <StatusChip status={plan.status} />
+              </div>
+              <p className="mt-1 text-sm font-semibold text-muted">
+                {formatDate(plan.startDate)} → {formatDate(plan.endDate)} · {plan.occupiedSeats}/{plan.totalSeats} places
+              </p>
+            </MobileCard>
+          ))}
         </div>
       </div>
     </div>
@@ -330,124 +423,118 @@ function PlansTab({ plans }: { plans: Plan[] }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Plans</h2>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 rounded-lg bg-[#E8622C] text-white text-sm font-medium hover:bg-[#d4561f]"
-        >
-          + Nouveau plan
-        </button>
-      </div>
+    <div className="space-y-5">
+      <SectionTitle
+        action={
+          <button onClick={openCreate} className="btn bg-brand text-white w-full sm:w-auto">
+            <Plus className="w-4 h-4" strokeWidth={3} /> Nouveau plan
+          </button>
+        }
+      >
+        Plans
+      </SectionTitle>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingPlan ? "Modifier le plan" : "Nouveau plan"}
-            </h3>
-            {error && (
-              <p className="text-sm text-red-500 mb-3 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Nom</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Claude Team - Fev 2025"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Date debut</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                    value={form.startDate}
-                    onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-600 mb-1">Date fin</label>
-                  <input
-                    type="date"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                    value={form.endDate}
-                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Nombre de places</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.totalSeats}
-                  onChange={(e) => setForm({ ...form, totalSeats: e.target.value })}
-                  placeholder="15"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-              >
+        <Modal
+          title={editingPlan ? "Modifier le plan" : "Nouveau plan"}
+          onClose={() => setShowForm(false)}
+          footer={
+            <>
+              <button onClick={() => setShowForm(false)} className="btn bg-white">
                 Annuler
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="flex-1 px-4 py-2 rounded-lg bg-[#E8622C] text-white hover:bg-[#d4561f] disabled:opacity-50 text-sm font-medium"
-              >
-                {saving ? "..." : editingPlan ? "Mettre a jour" : "Creer"}
+              <button onClick={handleSubmit} disabled={saving} className="btn bg-brand text-white">
+                {saving ? "…" : editingPlan ? "Mettre à jour" : "Créer"}
               </button>
+            </>
+          }
+        >
+          <ErrorBox message={error} />
+          <div className="space-y-4">
+            <Field label="Nom">
+              <input
+                type="text"
+                className="field"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="X-Gen 4"
+              />
+            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Date de début">
+                <input
+                  type="date"
+                  className="field"
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                />
+              </Field>
+              <Field label="Date de fin">
+                <input
+                  type="date"
+                  className="field"
+                  value={form.endDate}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                />
+              </Field>
             </div>
+            <Field label="Nombre de places">
+              <input
+                type="number"
+                min="1"
+                className="field"
+                value={form.totalSeats}
+                onChange={(e) => setForm({ ...form, totalSeats: e.target.value })}
+                placeholder="15"
+              />
+            </Field>
           </div>
-        </div>
+        </Modal>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-gray-500">
-                <th className="px-5 py-3 font-medium">Nom</th>
-                <th className="px-5 py-3 font-medium">Debut</th>
-                <th className="px-5 py-3 font-medium">Fin</th>
-                <th className="px-5 py-3 font-medium">Places</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {plans.map((plan) => (
-                <tr key={plan.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-900">{plan.name}</td>
-                  <td className="px-5 py-3 text-gray-600">{formatDate(plan.startDate)}</td>
-                  <td className="px-5 py-3 text-gray-600">{formatDate(plan.endDate)}</td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {plan.occupiedSeats}/{plan.totalSeats}
-                  </td>
-                  <td className="px-5 py-3">{statusBadge(plan.status)}</td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => openEdit(plan)}
-                      className="text-[#E8622C] hover:underline text-sm font-medium"
-                    >
-                      Modifier
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {plans.length === 0 && <EmptyState text="Aucun plan. Créez le premier !" />}
+
+      <Table head={["Nom", "Début", "Fin", "Places", "Statut", ""]}>
+        {plans.map((plan) => (
+          <tr key={plan.id} className="hover:bg-cream">
+            <td className="px-5 py-3.5 font-extrabold">{plan.name}</td>
+            <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">{formatDate(plan.startDate)}</td>
+            <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">{formatDate(plan.endDate)}</td>
+            <td className="px-5 py-3.5 font-bold">
+              {plan.occupiedSeats}/{plan.totalSeats}
+            </td>
+            <td className="px-5 py-3.5">
+              <StatusChip status={plan.status} />
+            </td>
+            <td className="px-5 py-3.5 text-right">
+              <button onClick={() => openEdit(plan)} className="btn !py-1.5 !px-3.5 text-sm bg-white !shadow-[2px_2px_0_var(--ink)]">
+                <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} /> Modifier
+              </button>
+            </td>
+          </tr>
+        ))}
+      </Table>
+
+      <div className="md:hidden space-y-3">
+        {plans.map((plan) => (
+          <MobileCard key={plan.id}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-lg font-extrabold truncate">{plan.name}</p>
+              <StatusChip status={plan.status} />
+            </div>
+            <p className="mt-1 text-sm font-semibold text-muted">
+              {formatDate(plan.startDate)} → {formatDate(plan.endDate)}
+            </p>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="chip bg-peach">
+                {plan.occupiedSeats}/{plan.totalSeats} places
+              </span>
+              <button onClick={() => openEdit(plan)} className="btn !py-2 !px-4 text-sm bg-white !shadow-[2px_2px_0_var(--ink)]">
+                <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} /> Modifier
+              </button>
+            </div>
+          </MobileCard>
+        ))}
       </div>
     </div>
   );
@@ -564,7 +651,7 @@ function MembersTab({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PinModal
         open={showPinModal}
         onConfirm={confirmDelete}
@@ -574,151 +661,149 @@ function MembersTab({
         }}
       />
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Membres ({members.length})
-        </h2>
-        <button
-          onClick={openAddMember}
-          className="px-4 py-2 rounded-lg bg-[#E8622C] text-white text-sm font-medium hover:bg-[#d4561f]"
-        >
-          + Ajouter un ancien membre
-        </button>
-      </div>
+      <SectionTitle
+        action={
+          <button onClick={openAddMember} className="btn bg-brand text-white w-full sm:w-auto">
+            <Plus className="w-4 h-4" strokeWidth={3} /> Ajouter un ancien membre
+          </button>
+        }
+      >
+        Membres <span className="text-brand">{members.length}</span>
+      </SectionTitle>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingMember ? "Modifier le membre" : "Ajouter un ancien membre"}
-            </h3>
-            {error && (
-              <p className="text-sm text-red-500 mb-3 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Email</label>
-                <input
-                  type="email"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  disabled={!!editingMember}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Nom complet</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.displayName}
-                  onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Plan</label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.planId}
-                  onChange={(e) => setForm({ ...form, planId: e.target.value })}
-                >
-                  <option value="">Selectionner un plan</option>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Email a ajouter au plan Claude
-                </label>
-                <input
-                  type="email"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.emailToAdd}
-                  onChange={(e) => setForm({ ...form, emailToAdd: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Comment a-t-il connu X-Gen ?
-                </label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-                  value={form.heardAboutUs}
-                  onChange={(e) => setForm({ ...form, heardAboutUs: e.target.value })}
-                  placeholder="WhatsApp, TikTok, Ami..."
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={() => setShowForm(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
-              >
+        <Modal
+          title={editingMember ? "Modifier le membre" : "Ajouter un ancien membre"}
+          onClose={() => setShowForm(false)}
+          footer={
+            <>
+              <button onClick={() => setShowForm(false)} className="btn bg-white">
                 Annuler
               </button>
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="flex-1 px-4 py-2 rounded-lg bg-[#E8622C] text-white hover:bg-[#d4561f] disabled:opacity-50 text-sm font-medium"
-              >
-                {saving ? "..." : editingMember ? "Mettre a jour" : "Ajouter"}
+              <button onClick={handleSubmit} disabled={saving} className="btn bg-brand text-white">
+                {saving ? "…" : editingMember ? "Mettre à jour" : "Ajouter"}
               </button>
-            </div>
+            </>
+          }
+        >
+          <ErrorBox message={error} />
+          <div className="space-y-4">
+            <Field label="Email">
+              <input
+                type="email"
+                className="field disabled:bg-cream disabled:text-muted"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                disabled={!!editingMember}
+              />
+            </Field>
+            <Field label="Nom complet">
+              <input
+                type="text"
+                className="field"
+                value={form.displayName}
+                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+              />
+            </Field>
+            <Field label="Plan">
+              <select
+                className="field appearance-none cursor-pointer"
+                value={form.planId}
+                onChange={(e) => setForm({ ...form, planId: e.target.value })}
+              >
+                <option value="">Sélectionner un plan</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Email à ajouter au plan Claude">
+              <input
+                type="email"
+                className="field"
+                value={form.emailToAdd}
+                onChange={(e) => setForm({ ...form, emailToAdd: e.target.value })}
+              />
+            </Field>
+            <Field label="Comment a-t-il connu X-Gen ?">
+              <input
+                type="text"
+                className="field"
+                value={form.heardAboutUs}
+                onChange={(e) => setForm({ ...form, heardAboutUs: e.target.value })}
+                placeholder="WhatsApp, TikTok, Ami..."
+              />
+            </Field>
           </div>
-        </div>
+        </Modal>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-gray-500">
-                <th className="px-5 py-3 font-medium">Nom</th>
-                <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">Plan</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Inscription</th>
-                <th className="px-5 py-3 font-medium">Expiration</th>
-                <th className="px-5 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {members.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-900">
-                    {member.displayName}
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">{member.email}</td>
-                  <td className="px-5 py-3 text-gray-600">{member.planName}</td>
-                  <td className="px-5 py-3">{statusBadge(member.status)}</td>
-                  <td className="px-5 py-3 text-gray-600">{formatDate(member.joinDate)}</td>
-                  <td className="px-5 py-3 text-gray-600">{formatDate(member.expiryDate)}</td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEdit(member)}
-                        className="text-[#E8622C] hover:underline text-sm font-medium"
-                      >
-                        Modifier
-                      </button>
-                      <button
-                        onClick={() => requestDelete(member.id)}
-                        className="text-red-500 hover:underline text-sm font-medium"
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {members.length === 0 && <EmptyState text="Aucun membre pour le moment." />}
+
+      <Table head={["Nom", "Email", "Plan", "Statut", "Inscription", "Expiration", ""]}>
+        {members.map((member) => (
+          <tr key={member.id} className="hover:bg-cream">
+            <td className="px-5 py-3.5 font-extrabold whitespace-nowrap">{member.displayName}</td>
+            <td className="px-5 py-3.5 font-semibold text-muted">{member.email}</td>
+            <td className="px-5 py-3.5 font-bold whitespace-nowrap">{member.planName}</td>
+            <td className="px-5 py-3.5">
+              <StatusChip status={member.status} />
+            </td>
+            <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">{formatDate(member.joinDate)}</td>
+            <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">{formatDate(member.expiryDate)}</td>
+            <td className="px-5 py-3.5">
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => openEdit(member)}
+                  aria-label="Modifier"
+                  className="btn !p-0 w-9 h-9 bg-white !shadow-[2px_2px_0_var(--ink)]"
+                >
+                  <Pencil className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => requestDelete(member.id)}
+                  aria-label="Supprimer"
+                  className="btn !p-0 w-9 h-9 bg-[#ffb4ae] !shadow-[2px_2px_0_var(--ink)]"
+                >
+                  <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </Table>
+
+      <div className="md:hidden space-y-3">
+        {members.map((member) => (
+          <MobileCard key={member.id}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-lg font-extrabold truncate">{member.displayName}</p>
+                <p className="text-sm font-semibold text-muted truncate">{member.email}</p>
+              </div>
+              <StatusChip status={member.status} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="chip bg-peach">{member.planName}</span>
+              <span className="chip bg-white">
+                {formatDate(member.joinDate)} → {formatDate(member.expiryDate)}
+              </span>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={() => openEdit(member)} className="btn !py-2 text-sm bg-white !shadow-[2px_2px_0_var(--ink)]">
+                <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} /> Modifier
+              </button>
+              <button
+                onClick={() => requestDelete(member.id)}
+                className="btn !py-2 text-sm bg-[#ffb4ae] !shadow-[2px_2px_0_var(--ink)]"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={2.5} /> Supprimer
+              </button>
+            </div>
+          </MobileCard>
+        ))}
       </div>
     </div>
   );
@@ -730,95 +815,77 @@ function MembersTab({
 
 function PaymentsTab({ payments }: { payments: Payment[] }) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Paiements ({payments.length})
-        </h2>
+    <div className="space-y-5">
+      <SectionTitle>
+        Paiements <span className="text-brand">{payments.length}</span>
+      </SectionTitle>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          label="Encaissé"
+          value={formatPrice(payments.filter((p) => p.status === "complete").reduce((s, p) => s + p.amount, 0))}
+          sub="FCFA"
+          tone="bg-[#bdf2cf]"
+        />
+        <StatCard label="En attente" value={payments.filter((p) => p.status === "pending").length} tone="bg-sun" />
+        <StatCard label="Payés" value={payments.filter((p) => p.status === "complete").length} tone="bg-white" />
+        <StatCard label="Échoués" value={payments.filter((p) => p.status === "failed").length} tone="bg-[#ffb4ae]" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total encaisse"
-          value={`${formatPrice(payments.filter((p) => p.status === "complete").reduce((s, p) => s + p.amount, 0))} FCFA`}
-          color="text-green-600"
-        />
-        <StatCard
-          label="En attente"
-          value={payments.filter((p) => p.status === "pending").length}
-          color="text-yellow-600"
-        />
-        <StatCard
-          label="Completes"
-          value={payments.filter((p) => p.status === "complete").length}
-          color="text-green-600"
-        />
-        <StatCard
-          label="Echoues"
-          value={payments.filter((p) => p.status === "failed").length}
-          color="text-red-500"
-        />
-      </div>
+      {payments.length === 0 && <EmptyState text="Aucun paiement pour le moment." />}
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-left text-gray-500">
-                <th className="px-5 py-3 font-medium">Reference</th>
-                <th className="px-5 py-3 font-medium">Membre</th>
-                <th className="px-5 py-3 font-medium">Montant</th>
-                <th className="px-5 py-3 font-medium">Type</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Date</th>
-                <th className="px-5 py-3 font-medium">Verifie</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {payments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-mono text-xs text-gray-900">
-                    {payment.reference}
-                  </td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {payment.displayName || payment.memberEmail}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-gray-900">
-                    {formatPrice(payment.amount)} FCFA
-                  </td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        payment.type === "join"
-                          ? "bg-blue-100 text-blue-800"
-                          : payment.type === "renewal"
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-orange-100 text-orange-800"
-                      }`}
-                    >
-                      {payment.type === "join"
-                        ? "Adhesion"
-                        : payment.type === "renewal"
-                          ? "Renouvellement"
-                          : "Nouveau plan"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3">{statusBadge(payment.status)}</td>
-                  <td className="px-5 py-3 text-gray-600">
-                    {formatDate(payment.paidAt || payment.createdAt)}
-                  </td>
-                  <td className="px-5 py-3">
-                    {payment.webhookVerified ? (
-                      <span className="text-green-600 font-medium">Oui</span>
-                    ) : (
-                      <span className="text-gray-400">Non</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <Table head={["Référence", "Membre", "Montant", "Type", "Statut", "Date", "Vérifié"]}>
+        {payments.map((payment) => (
+          <tr key={payment.id} className="hover:bg-cream">
+            <td className="px-5 py-3.5 font-mono text-xs">{payment.reference}</td>
+            <td className="px-5 py-3.5 font-semibold">{payment.displayName || payment.memberEmail}</td>
+            <td className="px-5 py-3.5 font-extrabold whitespace-nowrap">{formatPrice(payment.amount)} FCFA</td>
+            <td className="px-5 py-3.5">
+              <TypeChip type={payment.type} />
+            </td>
+            <td className="px-5 py-3.5">
+              <StatusChip status={payment.status} />
+            </td>
+            <td className="px-5 py-3.5 font-semibold text-muted whitespace-nowrap">
+              {formatDate(payment.paidAt || payment.createdAt)}
+            </td>
+            <td className="px-5 py-3.5">
+              {payment.webhookVerified ? (
+                <span className="grid place-items-center w-7 h-7 rounded-full bg-[#bdf2cf] border-2 border-ink">
+                  <Check className="w-4 h-4" strokeWidth={3} />
+                </span>
+              ) : (
+                <span className="text-muted font-bold">Non</span>
+              )}
+            </td>
+          </tr>
+        ))}
+      </Table>
+
+      <div className="md:hidden space-y-3">
+        {payments.map((payment) => (
+          <MobileCard key={payment.id}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-2xl font-extrabold tracking-tight">
+                  {formatPrice(payment.amount)} <span className="text-sm">FCFA</span>
+                </p>
+                <p className="text-sm font-semibold text-muted truncate">{payment.displayName || payment.memberEmail}</p>
+              </div>
+              <StatusChip status={payment.status} />
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <TypeChip type={payment.type} />
+              <span className="chip bg-white">{formatDate(payment.paidAt || payment.createdAt)}</span>
+              {payment.webhookVerified && (
+                <span className="chip bg-[#bdf2cf]">
+                  <Check className="w-3 h-3" strokeWidth={3} /> Vérifié
+                </span>
+              )}
+            </div>
+            <p className="mt-3 font-mono text-[11px] text-muted break-all">{payment.reference}</p>
+          </MobileCard>
+        ))}
       </div>
     </div>
   );
@@ -923,150 +990,108 @@ function ConfigTab() {
     }
   }
 
+  const pinInput = (key: keyof typeof pinForm) => (
+    <input
+      type="password"
+      inputMode="numeric"
+      maxLength={6}
+      className="field tracking-[0.4em] font-extrabold"
+      value={pinForm[key]}
+      onChange={(e) => setPinForm({ ...pinForm, [key]: e.target.value.replace(/\D/g, "") })}
+      placeholder="••••••"
+    />
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Configuration des prix</h3>
+    <div className="space-y-6 sm:space-y-8">
+      <SectionTitle>Configuration</SectionTitle>
+
+      <div className="brut-card p-5 sm:p-6">
+        <h3 className="text-2xl font-extrabold tracking-tight mb-5">Prix</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Cout de base (FCFA)
-            </label>
+          <Field label="Coût de base (FCFA)" hint="Coût Anthropic en équivalent FCFA">
             <input
               type="number"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
+              className="field"
               value={pricing.baseCostFCFA}
-              onChange={(e) =>
-                setPricing({ ...pricing, baseCostFCFA: Number(e.target.value) })
-              }
+              onChange={(e) => setPricing({ ...pricing, baseCostFCFA: Number(e.target.value) })}
             />
-            <p className="text-xs text-gray-400 mt-1">
-              Cout Anthropic en equivalent FCFA
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Marge (FCFA)</label>
+          </Field>
+          <Field label="Marge (FCFA)">
             <input
               type="number"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
+              className="field"
               value={pricing.marginFCFA}
-              onChange={(e) =>
-                setPricing({ ...pricing, marginFCFA: Number(e.target.value) })
-              }
+              onChange={(e) => setPricing({ ...pricing, marginFCFA: Number(e.target.value) })}
             />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Frais NotchPay (%)
-            </label>
+          </Field>
+          <Field label="Frais NotchPay" hint="Ex : 0.02 = 2 %">
             <input
               type="number"
               step="0.01"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
+              className="field"
               value={pricing.notchPayFeePercent}
-              onChange={(e) =>
-                setPricing({
-                  ...pricing,
-                  notchPayFeePercent: Number(e.target.value),
-                })
-              }
+              onChange={(e) => setPricing({ ...pricing, notchPayFeePercent: Number(e.target.value) })}
             />
-            <p className="text-xs text-gray-400 mt-1">Ex: 0.02 = 2%</p>
-          </div>
+          </Field>
         </div>
 
-        <div className="mt-5 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Prix final calcule</p>
-              <p className="text-2xl font-bold text-[#E8622C]">
-                {formatPrice(computedFullPrice)} FCFA
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                ({formatPrice(pricing.baseCostFCFA)} + {formatPrice(pricing.marginFCFA)}) x
-                (1 + {pricing.notchPayFeePercent}) = {formatPrice(computedFullPrice)} FCFA
-                (arrondi a 500)
-              </p>
-            </div>
-            <button
-              onClick={handleSavePricing}
-              disabled={savingPricing}
-              className="px-5 py-2 rounded-lg bg-[#E8622C] text-white text-sm font-medium hover:bg-[#d4561f] disabled:opacity-50"
-            >
-              {saved ? "Enregistre !" : savingPricing ? "..." : "Enregistrer"}
-            </button>
+        <div className="mt-6 rounded-3xl bg-sun border-[2.5px] border-ink p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide">Prix final calculé</p>
+            <p className="text-4xl font-extrabold tracking-tight">
+              {formatPrice(computedFullPrice)} <span className="text-base">FCFA</span>
+            </p>
+            <p className="text-xs font-semibold text-ink/70 mt-1 break-words">
+              ({formatPrice(pricing.baseCostFCFA)} + {formatPrice(pricing.marginFCFA)}) × (1 +{" "}
+              {pricing.notchPayFeePercent}), arrondi à 500
+            </p>
           </div>
+          <button onClick={handleSavePricing} disabled={savingPricing} className="btn bg-brand text-white w-full sm:w-auto">
+            {saved ? (
+              <>
+                <Check className="w-4 h-4" strokeWidth={3} /> Enregistré !
+              </>
+            ) : savingPricing ? (
+              "…"
+            ) : (
+              "Enregistrer"
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Gestion du PIN</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Le PIN est requis pour les actions critiques (suppression de membres, etc.).
-          PIN par defaut: 000000
+      <div className="brut-card p-5 sm:p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="grid place-items-center w-11 h-11 rounded-2xl bg-peach border-2 border-ink shrink-0">
+            <Lock className="w-5 h-5" strokeWidth={2.5} />
+          </span>
+          <h3 className="text-2xl font-extrabold tracking-tight">PIN administrateur</h3>
+        </div>
+        <p className="text-sm text-muted mb-5">
+          Requis pour les actions critiques (suppression de membres, etc.). PIN par défaut : 000000.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">PIN actuel</label>
-            <input
-              type="password"
-              maxLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-              value={pinForm.currentPin}
-              onChange={(e) =>
-                setPinForm({
-                  ...pinForm,
-                  currentPin: e.target.value.replace(/\D/g, ""),
-                })
-              }
-              placeholder="------"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Nouveau PIN</label>
-            <input
-              type="password"
-              maxLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-              value={pinForm.newPin}
-              onChange={(e) =>
-                setPinForm({
-                  ...pinForm,
-                  newPin: e.target.value.replace(/\D/g, ""),
-                })
-              }
-              placeholder="------"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">
-              Confirmer le PIN
-            </label>
-            <input
-              type="password"
-              maxLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#E8622C]/50 focus:border-[#E8622C]"
-              value={pinForm.confirmPin}
-              onChange={(e) =>
-                setPinForm({
-                  ...pinForm,
-                  confirmPin: e.target.value.replace(/\D/g, ""),
-                })
-              }
-              placeholder="------"
-            />
-          </div>
+          <Field label="PIN actuel">{pinInput("currentPin")}</Field>
+          <Field label="Nouveau PIN">{pinInput("newPin")}</Field>
+          <Field label="Confirmer le PIN">{pinInput("confirmPin")}</Field>
         </div>
-        {pinError && <p className="text-sm text-red-500 mt-2">{pinError}</p>}
-        <div className="mt-4">
-          <button
-            onClick={handleSavePin}
-            disabled={savingPin}
-            className="px-5 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
-          >
-            {pinSaved ? "PIN mis a jour !" : savingPin ? "..." : "Changer le PIN"}
-          </button>
-        </div>
+        {pinError && (
+          <p className="mt-4 rounded-2xl border-2 border-ink bg-red-100 px-4 py-3 text-sm font-semibold text-red-700">
+            {pinError}
+          </p>
+        )}
+        <button onClick={handleSavePin} disabled={savingPin} className="btn bg-ink text-white mt-5 w-full sm:w-auto">
+          {pinSaved ? (
+            <>
+              <Check className="w-4 h-4" strokeWidth={3} /> PIN mis à jour !
+            </>
+          ) : savingPin ? (
+            "…"
+          ) : (
+            "Changer le PIN"
+          )}
+        </button>
       </div>
     </div>
   );
@@ -1076,12 +1101,12 @@ function ConfigTab() {
 // Main Admin Dashboard Page
 // ---------------------------------------------------------------------------
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "overview", label: "Vue d'ensemble" },
-  { id: "plans", label: "Plans" },
-  { id: "members", label: "Membres" },
-  { id: "payments", label: "Paiements" },
-  { id: "config", label: "Configuration" },
+const TABS: { id: TabId; label: string; icon: ReactNode }[] = [
+  { id: "overview", label: "Vue d'ensemble", icon: <LayoutGrid className="w-4 h-4" strokeWidth={2.5} /> },
+  { id: "plans", label: "Plans", icon: <Layers className="w-4 h-4" strokeWidth={2.5} /> },
+  { id: "members", label: "Membres", icon: <Users className="w-4 h-4" strokeWidth={2.5} /> },
+  { id: "payments", label: "Paiements", icon: <CreditCard className="w-4 h-4" strokeWidth={2.5} /> },
+  { id: "config", label: "Configuration", icon: <Settings className="w-4 h-4" strokeWidth={2.5} /> },
 ];
 
 export default function MyspacePage() {
@@ -1103,10 +1128,10 @@ export default function MyspacePage() {
 
   if (authLoading || dataLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin h-8 w-8 border-4 border-[#E8622C] border-t-transparent rounded-full" />
-          <p className="text-sm text-[#666]">Chargement des donnees...</p>
+      <div className="min-h-screen grid place-items-center bg-cream">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-brand border-[2.5px] border-ink shadow-[3px_3px_0_var(--ink)] animate-spin-slow" />
+          <p className="font-bold text-muted">Chargement des données…</p>
         </div>
       </div>
     );
@@ -1117,54 +1142,47 @@ export default function MyspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#E8622C] flex items-center justify-center">
-                <span className="text-white font-bold text-sm">X</span>
-              </div>
-              <h1 className="text-lg font-bold text-gray-900">X-Gen Admin</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-500">{user.email}</span>
-              <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-[#E8622C]/10 text-[#E8622C]">
-                Admin
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-cream overflow-x-hidden">
+      <Header />
 
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto -mb-px">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "border-[#E8622C] text-[#E8622C]"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
+        <section className="relative rounded-[32px] bg-ink text-white border-[2.5px] border-ink shadow-[6px_6px_0_var(--brand)] px-5 py-6 sm:px-8 sm:py-8 mb-6 sm:mb-8">
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className="chip bg-brand text-white !border-white">Admin</span>
+            <span className="chip bg-white text-ink max-w-full truncate">{user.email}</span>
           </div>
-        </div>
-      </nav>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight leading-none">
+            Tableau de <span className="text-sun">bord</span>
+          </h1>
+        </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {activeTab === "overview" && (
-          <OverviewTab plans={plans} members={members} payments={payments} />
-        )}
-        {activeTab === "plans" && <PlansTab plans={plans} />}
-        {activeTab === "members" && <MembersTab members={members} plans={plans} />}
-        {activeTab === "payments" && <PaymentsTab payments={payments} />}
-        {activeTab === "config" && <ConfigTab />}
+        <nav className="-mx-4 px-4 sm:mx-0 sm:px-0 mb-6 sm:mb-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 w-max pb-2 pr-2">
+            {TABS.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`btn !py-2.5 !px-4 text-sm !shadow-[3px_3px_0_var(--ink)] ${
+                    active ? "bg-brand text-white" : "bg-white text-ink"
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div key={activeTab} className="animate-rise">
+          {activeTab === "overview" && <OverviewTab plans={plans} members={members} payments={payments} />}
+          {activeTab === "plans" && <PlansTab plans={plans} />}
+          {activeTab === "members" && <MembersTab members={members} plans={plans} />}
+          {activeTab === "payments" && <PaymentsTab payments={payments} />}
+          {activeTab === "config" && <ConfigTab />}
+        </div>
       </main>
     </div>
   );
